@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import UETLogo from "./assets/logo.png"; 
 
 export default function Login({ onLoginSuccess }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -25,6 +27,7 @@ export default function Login({ onLoginSuccess }) {
                 if (onLoginSuccess) {
                     onLoginSuccess(data.token);
                 }
+                navigate('/admin');
             } else {
                 alert('Lỗi: ' + (data.message || "Sai thông tin đăng nhập"));
             }

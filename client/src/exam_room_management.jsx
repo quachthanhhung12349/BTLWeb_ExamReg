@@ -3,13 +3,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
-const StudentManagement = () => {
+const ExamRoomManagement = () => {
     return (
         <div id="page-content-wrapper">
             <nav class="navbar navbar-light bg-light border-bottom p-3">
-                <h1 class="h3 mb-0">Quản lý sinh viên</h1>
+                <h1 class="h3 mb-0">Quản lý phòng thi</h1>
                 <button class="btn btn-primary">
-                    + Thêm sinh viên
+                    + Thêm phòng thi
                 </button>
             </nav>
 
@@ -19,10 +19,10 @@ const StudentManagement = () => {
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th>Mã sinh viên</th>
-                                    <th>Họ tên sinh viên</th>
-                                    <th>Ngày sinh</th>
-                                    <th>Lớp</th>
+                                    <th>STT</th>
+                                    <th>Giảng đường</th>
+                                    <th>Phòng thi</th>
+                                    <th>Sức chứa</th>
                                     <th>Hành động</th>
                                 </tr>
                             </thead>
@@ -41,4 +41,4 @@ const StudentManagement = () => {
     );
 }
 
-export default StudentManagement;
+export default ExamRoomManagement;

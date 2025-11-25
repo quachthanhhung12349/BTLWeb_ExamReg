@@ -3,20 +3,117 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import LayoutAdmin from './layout_admin.jsx';
 import SidebarAdmin from './sidebar_admin.jsx';
 import StudentManagement from './student_management.jsx';
+import Login from './Login.jsx';
+import DashboardAdmin from './dashboard_admin.jsx';
+import SubjectManagement from './subject_management.jsx';
+import ExamManagement from './exam_management.jsx';
+import ExamRoomManagement from './exam_room_management.jsx';
 
 import './App.css'
 
 function App() {
   const currentPage = 'StudentManagement';
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleLoginSuccess = () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    setIsLoggedIn(true);
+  };
+
+  //const authed = isLoggedIn || localStorage.getItem('isLoggedIn') === 'true';
+
+const authed = true; //For debugging purposes only, remove later
 
   return (
-    <LayoutAdmin activeLink={currentPage}>
-      <StudentManagement />
-    </LayoutAdmin>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+        {/* keep a default admin route and add specific admin subroutes so sidebar links work */}
+        <Route
+          path="/admin"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink={currentPage}>
+                <StudentManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="Dashboard">
+                <DashboardAdmin />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/student"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="StudentManagement">
+                <StudentManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/course"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="CourseManagement">
+                <SubjectManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/reports"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="Reports">
+                <ExamManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/settings"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="Settings">
+                <ExamRoomManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route path="/" element={<Navigate to={authed ? '/admin' : '/login'} replace />} />
+      </Routes>
+    </Router>
   );
 };
 
