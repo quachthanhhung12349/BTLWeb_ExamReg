@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "bootstrap": "^5.3.8",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -24,5 +27,18 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "vite": "^7.1.7"
-  }
+  },
+  "description": "Vào Client đề cài Frontend, và Server để cài Backend",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quachthanhhung12349/BTLWeb_ExamReg.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/quachthanhhung12349/BTLWeb_ExamReg/issues"
+  },
+  "homepage": "https://github.com/quachthanhhung12349/BTLWeb_ExamReg#readme"
 }
