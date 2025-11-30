@@ -4,34 +4,72 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
 const SubjectManagement = () => {
-    return (
-        <div id="page-content-wrapper">
-            <nav class="navbar navbar-light bg-light border-bottom p-3">
-                <h1 class="h3 mb-0">Quản lý học phần</h1>
-                <button class="btn btn-primary">
-                    + Thêm học phần
-                </button>
-            </nav>
+    const [searchTerm, setSearchTerm] = useState('');
 
-            <div class="container-fluid py-4">
-                <div class="card">
-                    <div class="card-body">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Mã môn học</th>
-                                    <th>Tên môn học</th>
-                                    <th>Số tín chỉ</th>
-                                    <th>Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+    return (
+        <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Header Section */}
+            <div className="bg-white border-bottom p-4" style={{ borderRadius: 0 }}>
+                <h1 className="h3 mb-3">Quản lý học phần</h1>
+                
+                {/* Search Bar and Button Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between'}}>
+                    {/* Search Bar */}
+                    <div className="input-group" style={{ maxWidth: '900px' }}>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Tìm kiếm sinh viên..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ borderRadius: '0.375rem' }}
+                        />
+                        <button className="btn btn-outline-secondary" type="button" id="search-button">
+                            🔍
+                        </button>
+                    </div>
+                    {/* Add Button */}
+                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                        + Thêm học phần
+                    </button>
+                </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="container-fluid p-4" style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
+                <div className="card" style={{ boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)' }}>
+                    <div className="card-body p-0">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table className="table table-striped table-hover m-0">
+                                <thead className="table-light">
+                                    <tr>
+                                        <th style={{ padding: '1rem' }}>Mã học phần</th>
+                                        <th style={{ padding: '1rem' }}>Tên học phần</th>
+                                        <th style={{ padding: '1rem' }}>Số tín chỉ</th>
+                                        <th style={{ padding: '1rem', textAlign: 'center' }}>Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ padding: '1rem' }}>INT2204 1</td>
+                                        <td style={{ padding: '1rem' }}>Lập trình Web</td>
+                                        <td style={{ padding: '1rem' }}>3</td>
+                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                            <button className="btn btn-sm btn-outline-secondary">✎</button>
+                                            <button className="btn btn-sm btn-outline-danger ms-2">🗑</button>
+                                        </td>
+                                    </tr>
                                 </tbody>
-                        </table>
-                        <div class="d-flex justify-content-end align-items-center mt-3">
-                            <span class="me-3">Hiển thị 1-10 trên 1234</span>
-                            <button class="btn btn-outline-secondary me-2">Trước</button>
-                            <button class="btn btn-outline-secondary">Sau</button>
+                            </table>
+                        </div>
+                        
+                        {/* Pagination */}
+                        <div className="d-flex justify-content-between align-items-center p-3" style={{ borderTop: '1px solid #e9ecef' }}>
+                            <span className="text-muted">Hiển thị 1-10 trên 1234</span>
+                            <div>
+                                <button className="btn btn-outline-secondary me-2">Trước</button>
+                                <button className="btn btn-outline-secondary">Sau</button>
+                            </div>
                         </div>
                     </div>
                 </div>
