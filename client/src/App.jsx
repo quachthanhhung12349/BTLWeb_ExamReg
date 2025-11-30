@@ -13,6 +13,8 @@ import DashboardAdmin from './dashboard_admin.jsx';
 import SubjectManagement from './subject_management.jsx';
 import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
+import StudentAdd from './student_add.jsx';
+import StudentEdit from './student_edit.jsx';
 
 import './App.css'
 
@@ -66,6 +68,32 @@ const authed = true; //For debugging purposes only, remove later
             authed ? (
               <LayoutAdmin activeLink="StudentManagement">
                 <StudentManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/student/add"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="StudentManagement">
+                <StudentAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/student/edit/:maSv"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="StudentManagement">
+                <StudentEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />

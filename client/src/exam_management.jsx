@@ -14,11 +14,11 @@ const ExamManagement = () => {
                 {/* Search Bar and Button Row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between'}}>
                     {/* Search Bar */}
-                    <div className="input-group" style={{ maxWidth: '500px' }}>
+                    <div className="input-group" style={{ maxWidth: '900px' }}>
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Tìm kiếm sinh viên..."
+                            placeholder="Tìm kiếm ca thi..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{ borderRadius: '0.375rem' }}

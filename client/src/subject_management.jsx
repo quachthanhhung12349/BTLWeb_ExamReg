@@ -19,7 +19,7 @@ const SubjectManagement = () => {
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Tìm kiếm sinh viên..."
+                            placeholder="Tìm kiếm học phần..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{ borderRadius: '0.375rem' }}
