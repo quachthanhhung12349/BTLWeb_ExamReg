@@ -15,6 +15,10 @@ import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
 import StudentAdd from './student_add.jsx';
 import StudentEdit from './student_edit.jsx';
+import SubjectAdd from './subject_add.jsx';
+import SubjectEdit from './subject_edit.jsx';
+import ExamRoomAdd from './exam_room_add.jsx';
+import ExamRoomEdit from './exam_room_edit.jsx';
 
 import './App.css'
 
@@ -115,6 +119,32 @@ const authed = true; //For debugging purposes only, remove later
         />
 
         <Route
+          path="/admin/subject/add"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="CourseManagement">
+                <SubjectAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/subject/edit/:maHp"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="CourseManagement">
+                <SubjectEdit />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
           path="/admin/reports"
           element={
             authed ? (
@@ -133,6 +163,31 @@ const authed = true; //For debugging purposes only, remove later
             authed ? (
               <LayoutAdmin activeLink="Settings">
                 <ExamRoomManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/settings/add"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="Settings">
+                <ExamRoomAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/settings/edit/:id"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="Settings">
+                <ExamRoomEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />

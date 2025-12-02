@@ -1,10 +1,65 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
 const SubjectManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [subjects, setSubjects] = useState([]);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('subjects');
+            const parsed = raw ? JSON.parse(raw) : null;
+            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                setSubjects(parsed);
+            } else {
+                const seed = [
+                    { maHp: 'INT2204', tenHp: 'Lập trình Web', soTC: 3 },
+                    { maHp: 'INT2205', tenHp: 'Cấu trúc dữ liệu', soTC: 3 },
+                    { maHp: 'INT2206', tenHp: 'Hệ điều hành', soTC: 3 },
+                ];
+                setSubjects(seed);
+                localStorage.setItem('subjects', JSON.stringify(seed));
+            }
+        } catch (e) {
+            const fallback = [
+                { maHp: 'INT2204', tenHp: 'Lập trình Web', soTC: 3 },
+                { maHp: 'INT2205', tenHp: 'Cấu trúc dữ liệu', soTC: 3 },
+                { maHp: 'INT2206', tenHp: 'Hệ điều hành', soTC: 3 },
+            ];
+            setSubjects(fallback);
+            localStorage.setItem('subjects', JSON.stringify(fallback));
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('subjects', JSON.stringify(subjects));
+    }, [subjects]);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteReason, setDeleteReason] = useState('');
+
+    const openDelete = (subject) => {
+        setDeleteTarget(subject);
+        setDeleteReason('');
+        setShowDeleteModal(true);
+    };
+
+    const closeDelete = () => {
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setDeleteReason('');
+    };
+
+    const confirmDelete = () => {
+        if (!deleteReason) return;
+        setSubjects((prev) => prev.filter((s) => s.maHp !== deleteTarget.maHp));
+        closeDelete();
+    };
 
     return (
         <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -29,7 +84,7 @@ const SubjectManagement = () => {
                         </button>
                     </div>
                     {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/subject/add')}>
                         + Thêm học phần
                     </button>
                 </div>
@@ -50,15 +105,24 @@ const SubjectManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td style={{ padding: '1rem' }}>INT2204 1</td>
-                                        <td style={{ padding: '1rem' }}>Lập trình Web</td>
-                                        <td style={{ padding: '1rem' }}>3</td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                            <button className="btn btn-sm btn-outline-secondary">✎</button>
-                                            <button className="btn btn-sm btn-outline-danger ms-2">🗑</button>
-                                        </td>
-                                    </tr>
+                                    {subjects.filter(s => {
+                                        if (!searchTerm) return true;
+                                        const q = searchTerm.toLowerCase();
+                                        return (
+                                            s.maHp.toLowerCase().includes(q) ||
+                                            s.tenHp.toLowerCase().includes(q)
+                                        );
+                                    }).map((s) => (
+                                        <tr key={s.maHp}>
+                                            <td style={{ padding: '1rem' }}>{s.maHp}</td>
+                                            <td style={{ padding: '1rem' }}>{s.tenHp}</td>
+                                            <td style={{ padding: '1rem' }}>{s.soTC}</td>
+                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate(`/admin/subject/edit/${s.maHp}`)}>✎</button>
+                                                <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => openDelete(s)}>🗑</button>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
@@ -73,6 +137,34 @@ const SubjectManagement = () => {
                         </div>
                     </div>
                 </div>
+                {showDeleteModal && (
+                    <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, zIndex: 1050 }} />
+                )}
+
+                {showDeleteModal && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 1060, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div className="card" style={{ width: 520 }}>
+                            <div className="card-body">
+                                <h5 className="card-title">Xác nhận xoá</h5>
+                                <p>Bạn có muốn xoá học phần này ra khỏi danh sách không?</p>
+                                <div className="mb-3">
+                                    <label className="form-label">Chọn nguyên nhân xoá</label>
+                                    <select className="form-select" value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)}>
+                                        <option value="">-- Chọn nguyên nhân --</option>
+                                        <option value="Hủy chương trình">Hủy chương trình</option>
+                                        <option value="Trùng mã">Trùng mã</option>
+                                        <option value="Lỗi dữ liệu">Lỗi dữ liệu</option>
+                                        <option value="Nguyên nhân khác">Nguyên nhân khác</option>
+                                    </select>
+                                </div>
+                                <div className="d-flex justify-content-end">
+                                    <button className="btn btn-secondary me-2" onClick={closeDelete}>Không</button>
+                                    <button className="btn btn-danger" onClick={confirmDelete} disabled={!deleteReason}>Có</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
