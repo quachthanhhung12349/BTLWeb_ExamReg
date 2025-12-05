@@ -1,44 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createExamRoom } from './api/exam_room_api.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ExamRoomAdd = () => {
   const navigate = useNavigate();
-  const [id, setId] = useState('');
+  const [roomId, setRoomId] = useState('');
   const [building, setBuilding] = useState('');
   const [roomName, setRoomName] = useState('');
   const [capacity, setCapacity] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const loadRooms = () => {
-    try {
-      const raw = localStorage.getItem('examRooms');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  };
-
-  const saveRooms = (rooms) => {
-    localStorage.setItem('examRooms', JSON.stringify(rooms));
-  };
-
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
-    if (!id || !building || !roomName || !capacity) {
+    if (!roomId || !building || !roomName || !capacity) {
       setError('Vui lòng điền tất cả các trường.');
       return;
     }
-    const rooms = loadRooms();
-    if (rooms.find((r) => r.id === id)) {
-      setError('Mã phòng đã tồn tại.');
-      return;
+    setLoading(true);
+    try {
+      await createExamRoom({ roomId, building, roomName, capacity: Number(capacity) });
+      navigate('/admin/settings');
+    } catch (err) {
+      setError(err.message || 'Lỗi khi thêm ca thi.');
+    } finally {
+      setLoading(false);
     }
-    const newRoom = { id, building, roomName, capacity: Number(capacity) };
-    rooms.unshift(newRoom);
-    saveRooms(rooms);
-    navigate('/admin/settings');
   };
 
   const handleCancel = () => {
@@ -56,29 +45,30 @@ const ExamRoomAdd = () => {
           <div className="card-body">
             {error && <div className="alert alert-danger">{error}</div>}
             <form onSubmit={handleAdd}>
+
               <div className="mb-3">
                 <label className="form-label">STT (Mã)</label>
-                <input type="text" className="form-control" value={id} onChange={(e) => setId(e.target.value)} />
+                <input type="text" className="form-control" value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Giảng đường</label>
-                <input type="text" className="form-control" value={building} onChange={(e) => setBuilding(e.target.value)} />
+                <input type="text" className="form-control" value={building} onChange={(e) => setBuilding(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Tên phòng thi</label>
-                <input type="text" className="form-control" value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+                <input type="text" className="form-control" value={roomName} onChange={(e) => setRoomName(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Sức chứa</label>
-                <input type="number" className="form-control" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+                <input type="number" className="form-control" value={capacity} onChange={(e) => setCapacity(e.target.value)} disabled={loading} />
               </div>
 
               <div className="d-flex justify-content-end">
                 <button type="button" className="btn btn-secondary me-2" onClick={handleCancel}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">Thêm</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Đang thêm...' : 'Thêm'}</button>
               </div>
             </form>
           </div>

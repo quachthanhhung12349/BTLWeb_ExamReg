@@ -1,50 +1,37 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchCourses, deleteCourse } from './api/course_api.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
-const SubjectManagement = () => {
+const CourseManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [subjects, setSubjects] = useState([]);
+    const [courses, setCourses] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('subjects');
-            const parsed = raw ? JSON.parse(raw) : null;
-            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                setSubjects(parsed);
-            } else {
-                const seed = [
-                    { maHp: 'INT2204', tenHp: 'Lập trình Web', soTC: 3 },
-                    { maHp: 'INT2205', tenHp: 'Cấu trúc dữ liệu', soTC: 3 },
-                    { maHp: 'INT2206', tenHp: 'Hệ điều hành', soTC: 3 },
-                ];
-                setSubjects(seed);
-                localStorage.setItem('subjects', JSON.stringify(seed));
+        let mounted = true;
+        (async () => {
+            try {
+                const data = await fetchCourses();
+                if (mounted) setCourses(data || []);
+            } catch (err) { 
+                console.error('Failed to fetch courses:', err);
+                if (mounted) setCourses([]);
             }
-        } catch (e) {
-            const fallback = [
-                { maHp: 'INT2204', tenHp: 'Lập trình Web', soTC: 3 },
-                { maHp: 'INT2205', tenHp: 'Cấu trúc dữ liệu', soTC: 3 },
-                { maHp: 'INT2206', tenHp: 'Hệ điều hành', soTC: 3 },
-            ];
-            setSubjects(fallback);
-            localStorage.setItem('subjects', JSON.stringify(fallback));
-        }
+        })();
+        return () => (mounted = false);
     }, []);
-
-    useEffect(() => {
-        localStorage.setItem('subjects', JSON.stringify(subjects));
-    }, [subjects]);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteReason, setDeleteReason] = useState('');
+    const [currentPage, setCurrentPage] = useState(0);
+    const PAGE_SIZE = 10;
 
-    const openDelete = (subject) => {
-        setDeleteTarget(subject);
+    const openDelete = (course) => {
+        setDeleteTarget(course);
         setDeleteReason('');
         setShowDeleteModal(true);
     };
@@ -55,10 +42,52 @@ const SubjectManagement = () => {
         setDeleteReason('');
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!deleteReason) return;
-        setSubjects((prev) => prev.filter((s) => s.maHp !== deleteTarget.maHp));
-        closeDelete();
+        try {
+            await deleteCourse(deleteTarget._id);
+            setCourses((prev) => prev.filter((s) => s._id !== deleteTarget._id));
+            closeDelete();
+        } catch (err) {
+            alert('Error deleting course: ' + (err.message || err));
+        }
+    };
+
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        const q = (searchTerm || '').toLowerCase();
+        const filteredCount = courses.filter(s => {
+            if (!q) return true;
+            return (
+                (s.courseId || '').toLowerCase().includes(q) ||
+                (s.courseName || '').toLowerCase().includes(q)
+            );
+        }).length;
+        const maxPage = Math.max(0, Math.floor((filteredCount - 1) / PAGE_SIZE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+    }, [courses, searchTerm, currentPage]);
+
+    const filteredCourses = courses.filter(s => {
+        if (!searchTerm) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+            (s.courseId || '').toLowerCase().includes(q) ||
+            (s.courseName || '').toLowerCase().includes(q)
+        );
+    });
+
+    const total = filteredCourses.length;
+    const startIndex = currentPage * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, total);
+    const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+
+    const prevPage = () => setCurrentPage(p => Math.max(0, p - 1));
+    const nextPage = () => {
+        const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+        setCurrentPage(p => Math.min(maxPage, p + 1));
     };
 
     return (
@@ -84,7 +113,7 @@ const SubjectManagement = () => {
                         </button>
                     </div>
                     {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/subject/add')}>
+                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/course/add')}>
                         + Thêm học phần
                     </button>
                 </div>
@@ -105,34 +134,36 @@ const SubjectManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {subjects.filter(s => {
-                                        if (!searchTerm) return true;
-                                        const q = searchTerm.toLowerCase();
-                                        return (
-                                            s.maHp.toLowerCase().includes(q) ||
-                                            s.tenHp.toLowerCase().includes(q)
-                                        );
-                                    }).map((s) => (
-                                        <tr key={s.maHp}>
-                                            <td style={{ padding: '1rem' }}>{s.maHp}</td>
-                                            <td style={{ padding: '1rem' }}>{s.tenHp}</td>
-                                            <td style={{ padding: '1rem' }}>{s.soTC}</td>
+                                    {paginatedCourses.map((s, idx) => (
+                                        <tr key={s._id}>
+                                            <td style={{ padding: '1rem' }}>{s.courseId || '-'}</td>
+                                            <td style={{ padding: '1rem' }}>{s.courseName || '-'}</td>
+                                            <td style={{ padding: '1rem' }}>{s.credits || '-'}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate(`/admin/subject/edit/${s.maHp}`)}>✎</button>
+                                                <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate(`/admin/course/edit/${s._id}`)}>✎</button>
                                                 <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => openDelete(s)}>🗑</button>
                                             </td>
                                         </tr>
                                     ))}
+                                    {paginatedCourses.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="text-center p-4 text-muted">Không có kết quả</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                         
                         {/* Pagination */}
                         <div className="d-flex justify-content-between align-items-center p-3" style={{ borderTop: '1px solid #e9ecef' }}>
-                            <span className="text-muted">Hiển thị 1-10 trên 1234</span>
+                            <span className="text-muted">
+                                {total === 0
+                                    ? `Hiển thị 0 trên 0`
+                                    : `Hiển thị ${startIndex + 1}-${endIndex} trên ${total}`}
+                            </span>
                             <div>
-                                <button className="btn btn-outline-secondary me-2">Trước</button>
-                                <button className="btn btn-outline-secondary">Sau</button>
+                                <button className="btn btn-outline-secondary me-2" onClick={prevPage} disabled={currentPage === 0}>Trước</button>
+                                <button className="btn btn-outline-secondary" onClick={nextPage} disabled={endIndex >= total}>Sau</button>
                             </div>
                         </div>
                     </div>
@@ -170,4 +201,4 @@ const SubjectManagement = () => {
     );
 }
 
-export default SubjectManagement;
+export default CourseManagement;

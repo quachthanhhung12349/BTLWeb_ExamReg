@@ -1,43 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createCourse } from './api/course_api.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const SubjectAdd = () => {
+const CourseAdd = () => {
   const navigate = useNavigate();
-  const [maHp, setMaHp] = useState('');
-  const [tenHp, setTenHp] = useState('');
-  const [soTC, setSoTC] = useState('');
+  const [courseId, setCourseId] = useState('');
+  const [courseName, setCourseName] = useState('');
+  const [maxStudents, setMaxStudents] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const loadSubjects = () => {
-    try {
-      const raw = localStorage.getItem('subjects');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  };
-
-  const saveSubjects = (subjects) => {
-    localStorage.setItem('subjects', JSON.stringify(subjects));
-  };
-
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
-    if (!maHp || !tenHp || !soTC) {
+    if (!courseId || !courseName) {
       setError('Vui lòng điền tất cả các trường.');
       return;
     }
-    const subjects = loadSubjects();
-    if (subjects.find((s) => s.maHp === maHp)) {
-      setError('Mã học phần đã tồn tại.');
-      return;
+    setLoading(true);
+    try {
+      await createCourse({ courseId, courseName, maxStudents: Number(maxStudents) });
+      navigate('/admin/course');
+    } catch (err) {
+      setError(err.message || 'Lỗi khi thêm học phần.');
+    } finally {
+      setLoading(false);
     }
-    const newSubject = { maHp, tenHp, soTC };
-    subjects.unshift(newSubject);
-    saveSubjects(subjects);
-    navigate('/admin/course');
   };
 
   const handleCancel = () => {
@@ -55,24 +44,25 @@ const SubjectAdd = () => {
           <div className="card-body">
             {error && <div className="alert alert-danger">{error}</div>}
             <form onSubmit={handleAdd}>
+
               <div className="mb-3">
                 <label className="form-label">Mã học phần</label>
-                <input type="text" className="form-control" value={maHp} onChange={(e) => setMaHp(e.target.value)} />
+                <input type="text" className="form-control" value={courseId} onChange={(e) => setCourseId(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Tên học phần</label>
-                <input type="text" className="form-control" value={tenHp} onChange={(e) => setTenHp(e.target.value)} />
+                <input type="text" className="form-control" value={courseName} onChange={(e) => setCourseName(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Số tín chỉ</label>
-                <input type="number" className="form-control" value={soTC} onChange={(e) => setSoTC(e.target.value)} />
+                <label className="form-label">Số lượng tối đa</label>
+                <input type="number" className="form-control" value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)} disabled={loading} />
               </div>
 
               <div className="d-flex justify-content-end">
                 <button type="button" className="btn btn-secondary me-2" onClick={handleCancel}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">Thêm</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Đang thêm...' : 'Thêm'}</button>
               </div>
             </form>
           </div>
@@ -82,4 +72,4 @@ const SubjectAdd = () => {
   );
 };
 
-export default SubjectAdd;
+export default CourseAdd;

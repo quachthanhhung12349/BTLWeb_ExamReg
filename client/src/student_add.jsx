@@ -1,61 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createStudent } from './api/student_api.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const StudentAdd = () => {
   const navigate = useNavigate();
-  const [maSv, setMaSv] = useState('');
-  const [hoTen, setHoTen] = useState('');
-  const [ngaySinh, setNgaySinh] = useState('');
-  const [lop, setLop] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const [name, setName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [class_, setClass] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const loadStudents = () => {
-    try {
-      const raw = localStorage.getItem('students');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  };
-
-  const saveStudents = (students) => {
-    localStorage.setItem('students', JSON.stringify(students));
-  };
-
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
-    if (!maSv || !hoTen || !ngaySinh || !lop || !email) {
+    
+    if (!studentId || !name || !birthDate || !class_ || !email) {
       setError('Vui lòng điền tất cả các trường.');
       return;
     }
 
-    const students = loadStudents();
-    const dupId = students.find((s) => s.maSv === maSv);
-    if (dupId) {
-      setError('Mã sinh viên đã tồn tại.');
-      return;
+    setLoading(true);
+    try {
+      await createStudent({
+        studentId,
+        name,
+        birthDate,
+        class: class_,
+        email
+      });
+      navigate('/admin/student');
+    } catch (err) {
+      setError(err.message || 'Lỗi khi thêm sinh viên.');
+    } finally {
+      setLoading(false);
     }
-    const dupEmail = students.find((s) => s.email === email);
-    if (dupEmail) {
-      setError('Email đã tồn tại.');
-      return;
-    }
-
-    const newStudent = {
-      maSv,
-      hoTen,
-      ngaySinh,
-      lop,
-      email,
-    };
-
-    students.unshift(newStudent);
-    saveStudents(students);
-
-    navigate('/admin/student');
   };
 
   const handleCancel = () => {
@@ -75,32 +56,32 @@ const StudentAdd = () => {
             <form onSubmit={handleAdd}>
               <div className="mb-3">
                 <label className="form-label">Mã sinh viên</label>
-                <input type="text" className="form-control" value={maSv} onChange={(e) => setMaSv(e.target.value)} />
+                <input type="text" className="form-control" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Họ tên sinh viên</label>
-                <input type="text" className="form-control" value={hoTen} onChange={(e) => setHoTen(e.target.value)} />
+                <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Ngày sinh</label>
-                <input type="date" className="form-control" value={ngaySinh} onChange={(e) => setNgaySinh(e.target.value)} />
+                <input type="date" className="form-control" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Lớp</label>
-                <input type="text" className="form-control" value={lop} onChange={(e) => setLop(e.target.value)} />
+                <input type="text" className="form-control" value={class_} onChange={(e) => setClass(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
               </div>
 
               <div className="d-flex justify-content-end">
-                <button type="button" className="btn btn-secondary me-2" onClick={handleCancel}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">Thêm</button>
+                <button type="button" className="btn btn-secondary me-2" onClick={handleCancel} disabled={loading}>Huỷ</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Đang thêm...' : 'Thêm'}</button>
               </div>
             </form>
           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { fetchStudents, deleteStudent } from './api/student_api.jsx'
 import { useNavigate } from 'react-router-dom'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -10,48 +11,24 @@ const StudentManagement = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('students');
-            const parsed = raw ? JSON.parse(raw) : null;
-            // if parsed is a non-empty array use it; otherwise seed sample data
-            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                setStudents(parsed);
-            } else {
-                // seed with temporary sample data if none or empty
-                const seed = [
-                    { maSv: '23021701', hoTen: 'Lý Đức Tú', ngaySinh: '2005-06-19', lop: 'K68I-CS3', email: '23021701@vnu.edu.vn' },
-                    { maSv: '23021702', hoTen: 'Nguyễn Văn A', ngaySinh: '2004-03-12', lop: 'K68I-CS1', email: '23021702@vnu.edu.vn' },
-                    { maSv: '23021703', hoTen: 'Trần Thị B', ngaySinh: '2003-11-05', lop: 'K68I-CS2', email: '23021703@vnu.edu.vn' },
-                    { maSv: '23021704', hoTen: 'Phạm Văn C', ngaySinh: '2005-01-22', lop: 'K68I-CS3', email: '23021704@vnu.edu.vn' },
-                    { maSv: '23021705', hoTen: 'Hoàng Thị D', ngaySinh: '2004-07-30', lop: 'K68I-CS1', email: '23021705@vnu.edu.vn' },
-                    { maSv: '23021706', hoTen: 'Lê Văn E', ngaySinh: '2005-09-10', lop: 'K68I-CS2', email: '23021706@vnu.edu.vn' },
-                ];
-                setStudents(seed);
-                // also persist seed so subsequent reloads reflect it
-                localStorage.setItem('students', JSON.stringify(seed));
+        let mounted = true;
+        (async () => {
+            try {
+                const data = await fetchStudents();
+                if (mounted) setStudents(data || []);
+            } catch (err) {
+                console.error('Failed to fetch students:', err);
+                if (mounted) setStudents([]);
             }
-        } catch (e) {
-            const fallback = [
-                { maSv: '23021701', hoTen: 'Lý Đức Tú', ngaySinh: '2005-06-19', lop: 'K68I-CS3', email: '23021701@vnu.edu.vn' },
-                { maSv: '23021702', hoTen: 'Nguyễn Văn A', ngaySinh: '2004-03-12', lop: 'K68I-CS1', email: '23021702@vnu.edu.vn' },
-                { maSv: '23021703', hoTen: 'Trần Thị B', ngaySinh: '2003-11-05', lop: 'K68I-CS2', email: '23021703@vnu.edu.vn' },
-                { maSv: '23021704', hoTen: 'Phạm Văn C', ngaySinh: '2005-01-22', lop: 'K68I-CS3', email: '23021704@vnu.edu.vn' },
-                { maSv: '23021705', hoTen: 'Hoàng Thị D', ngaySinh: '2004-07-30', lop: 'K68I-CS1', email: '23021705@vnu.edu.vn' },
-                { maSv: '23021706', hoTen: 'Lê Văn E', ngaySinh: '2005-09-10', lop: 'K68I-CS2', email: '23021706@vnu.edu.vn' },
-            ];
-            setStudents(fallback);
-            localStorage.setItem('students', JSON.stringify(fallback));
-        }
+        })();
+        return () => (mounted = false);
     }, []);
-
-    useEffect(() => {
-        localStorage.setItem('students', JSON.stringify(students));
-    }, [students]);
-
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteReason, setDeleteReason] = useState('');
+    const [currentPage, setCurrentPage] = useState(0);
+    const PAGE_SIZE = 10;
 
     const openDelete = (student) => {
         setDeleteTarget(student);
@@ -65,14 +42,60 @@ const StudentManagement = () => {
         setDeleteReason('');
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!deleteReason) return;
-        setStudents((prev) => prev.filter((s) => s.maSv !== deleteTarget.maSv));
-        closeDelete();
+        try {
+            await deleteStudent(deleteTarget._id);
+            setStudents((prev) => prev.filter((s) => s._id !== deleteTarget._id));
+            closeDelete();
+        } catch (err) {
+            alert('Error deleting student: ' + err.message);
+        }
+    };
+
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        const q = (searchTerm || '').toLowerCase();
+        const filteredCount = students.filter(s => {
+            if (!q) return true;
+            return (
+                (s.studentId || '').toLowerCase().includes(q) ||
+                (s.name || '').toLowerCase().includes(q) ||
+                (s.email || '').toLowerCase().includes(q) ||
+                ((s.class || '')).toLowerCase().includes(q)
+            );
+        }).length;
+        const maxPage = Math.max(0, Math.floor((filteredCount - 1) / PAGE_SIZE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+    }, [students, searchTerm, currentPage]);
+
+    const filteredStudents = students.filter(s => {
+        if (!searchTerm) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+            (s.studentId || '').toLowerCase().includes(q) ||
+            (s.name || '').toLowerCase().includes(q) ||
+            (s.email || '').toLowerCase().includes(q) ||
+            ((s.class || '')).toLowerCase().includes(q)
+        );
+    });
+
+    const total = filteredStudents.length;
+    const startIndex = currentPage * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, total);
+    const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+    const prevPage = () => setCurrentPage(p => Math.max(0, p - 1));
+    const nextPage = () => {
+        const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+        setCurrentPage(p => Math.min(maxPage, p + 1));
     };
 
     const handleEdit = (student) => {
-        navigate(`/admin/student/edit/${student.maSv}`);
+        navigate(`/admin/student/edit/${student._id}`);
     };
 
     return (
@@ -121,21 +144,12 @@ const StudentManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {students.filter(s => {
-                                        if (!searchTerm) return true;
-                                        const q = searchTerm.toLowerCase();
-                                        return (
-                                            s.maSv.toLowerCase().includes(q) ||
-                                            s.hoTen.toLowerCase().includes(q) ||
-                                            s.email.toLowerCase().includes(q) ||
-                                            (s.lop && s.lop.toLowerCase().includes(q))
-                                        );
-                                    }).map((s) => (
-                                        <tr key={s.maSv}>
-                                            <td style={{ padding: '1rem' }}>{s.maSv}</td>
-                                            <td style={{ padding: '1rem' }}>{s.hoTen}</td>
-                                            <td style={{ padding: '1rem' }}>{s.ngaySinh}</td>
-                                            <td style={{ padding: '1rem' }}>{s.lop}</td>
+                                    {paginatedStudents.map((s, idx) => (
+                                        <tr key={s._id}>
+                                            <td style={{ padding: '1rem' }}>{s.studentId}</td>
+                                            <td style={{ padding: '1rem' }}>{s.name}</td>
+                                            <td style={{ padding: '1rem' }}>{s.birthDate ? new Date(s.birthDate).toLocaleDateString('vi-VN') : '-'}</td>
+                                            <td style={{ padding: '1rem' }}>{s.class}</td>
                                             <td style={{ padding: '1rem' }}>{s.email}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                 <button className="btn btn-sm btn-outline-secondary" onClick={() => handleEdit(s)}>✎</button>
@@ -143,16 +157,25 @@ const StudentManagement = () => {
                                             </td>
                                         </tr>
                                     ))}
+                                    {paginatedStudents.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="text-center p-4 text-muted">Không có kết quả</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                         
                         {/* Pagination */}
                         <div className="d-flex justify-content-between align-items-center p-3" style={{ borderTop: '1px solid #e9ecef' }}>
-                            <span className="text-muted">Hiển thị 1-10 trên 1234</span>
+                            <span className="text-muted">
+                                {total === 0
+                                    ? `Hiển thị 0 trên 0`
+                                    : `Hiển thị ${startIndex + 1}-${endIndex} trên ${total}`}
+                            </span>
                             <div>
-                                <button className="btn btn-outline-secondary me-2">Trước</button>
-                                <button className="btn btn-outline-secondary">Sau</button>
+                                <button className="btn btn-outline-secondary me-2" onClick={prevPage} disabled={currentPage === 0}>Trước</button>
+                                <button className="btn btn-outline-secondary" onClick={nextPage} disabled={endIndex >= total}>Sau</button>
                             </div>
                         </div>
                     </div>

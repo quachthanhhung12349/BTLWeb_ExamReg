@@ -10,13 +10,13 @@ import SidebarAdmin from './sidebar_admin.jsx';
 import StudentManagement from './student_management.jsx';
 import Login from './Login.jsx';
 import DashboardAdmin from './dashboard_admin.jsx';
-import SubjectManagement from './subject_management.jsx';
+import CourseManagement from './course_management.jsx';
 import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
 import StudentAdd from './student_add.jsx';
 import StudentEdit from './student_edit.jsx';
-import SubjectAdd from './subject_add.jsx';
-import SubjectEdit from './subject_edit.jsx';
+import CourseAdd from './course_add.jsx';
+import CourseEdit from './course_edit.jsx';
 import ExamRoomAdd from './exam_room_add.jsx';
 import ExamRoomEdit from './exam_room_edit.jsx';
 
@@ -93,7 +93,7 @@ const authed = true; //For debugging purposes only, remove later
         />
 
         <Route
-          path="/admin/student/edit/:maSv"
+          path="/admin/student/edit/:id"
           element={
             authed ? (
               <LayoutAdmin activeLink="StudentManagement">
@@ -110,7 +110,7 @@ const authed = true; //For debugging purposes only, remove later
           element={
             authed ? (
               <LayoutAdmin activeLink="CourseManagement">
-                <SubjectManagement />
+                <CourseManagement />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
@@ -119,11 +119,11 @@ const authed = true; //For debugging purposes only, remove later
         />
 
         <Route
-          path="/admin/subject/add"
+          path="/admin/course/add"
           element={
             authed ? (
               <LayoutAdmin activeLink="CourseManagement">
-                <SubjectAdd />
+                <CourseAdd />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
@@ -132,11 +132,11 @@ const authed = true; //For debugging purposes only, remove later
         />
 
         <Route
-          path="/admin/subject/edit/:maHp"
+          path="/admin/course/edit/:id"
           element={
             authed ? (
               <LayoutAdmin activeLink="CourseManagement">
-                <SubjectEdit />
+                <CourseEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />

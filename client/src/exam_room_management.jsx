@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchExamRooms, deleteExamRoom } from './api/exam_room_api.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -8,40 +9,25 @@ const ExamRoomManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [rooms, setRooms] = useState([]);
     const navigate = useNavigate();
-
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('examRooms');
-            const parsed = raw ? JSON.parse(raw) : null;
-            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                setRooms(parsed);
-            } else {
-                const seed = [
-                    { id: '0001', building: 'Giảng đường A', roomName: 'Phòng 101', capacity: 50 },
-                    { id: '0002', building: 'Giảng đường B', roomName: 'Phòng 202', capacity: 40 },
-                    { id: '0003', building: 'Giảng đường C', roomName: 'Phòng 303', capacity: 60 },
-                ];
-                setRooms(seed);
-                localStorage.setItem('examRooms', JSON.stringify(seed));
+        let mounted = true;
+        (async () => {
+            try {
+                const data = await fetchExamRooms();
+                if (mounted) setRooms(data || []);
+            } catch (err) {
+                console.error('Failed to fetch rooms:', err);
+                if (mounted) setRooms([]);
             }
-        } catch (e) {
-            const fallback = [
-                { id: '0001', building: 'Giảng đường A', roomName: 'Phòng 101', capacity: 50 },
-                { id: '0002', building: 'Giảng đường B', roomName: 'Phòng 202', capacity: 40 },
-                { id: '0003', building: 'Giảng đường C', roomName: 'Phòng 303', capacity: 60 },
-            ];
-            setRooms(fallback);
-            localStorage.setItem('examRooms', JSON.stringify(fallback));
-        }
+        })();
+        return () => (mounted = false);
     }, []);
-
-    useEffect(() => {
-        localStorage.setItem('examRooms', JSON.stringify(rooms));
-    }, [rooms]);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteReason, setDeleteReason] = useState('');
+    const [currentPage, setCurrentPage] = useState(0);
+    const PAGE_SIZE = 10;
 
     const openDelete = (room) => {
         setDeleteTarget(room);
@@ -52,17 +38,64 @@ const ExamRoomManagement = () => {
     const closeDelete = () => {
         setShowDeleteModal(false);
         setDeleteTarget(null);
-        setDeleteReason('');
+        setDeleteReason(''); 
     };
 
-    const confirmDelete = () => {
+    // Reset to first page when search term changes
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [searchTerm]);
+
+    // Ensure current page is in range when rooms or search changes
+    useEffect(() => {
+        const q = (searchTerm || '').toLowerCase();
+        const filteredCount = rooms.filter(r => {
+            if (!q) return true;
+            return (
+                (r.roomId || r._id || '').toString().toLowerCase().includes(q) ||
+                (r.building || '').toLowerCase().includes(q) ||
+                (r.roomName || '').toLowerCase().includes(q)
+            );
+        }).length;
+        const maxPage = Math.max(0, Math.floor((filteredCount - 1) / PAGE_SIZE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+    }, [rooms, searchTerm, currentPage]);
+
+    const confirmDelete = async () => {
         if (!deleteReason) return;
-        setRooms((prev) => prev.filter((r) => r.id !== deleteTarget.id));
-        closeDelete();
+        try {
+            await deleteExamRoom(deleteTarget._id);
+            setRooms((prev) => prev.filter((r) => r._id !== deleteTarget._id));
+            closeDelete();
+        } catch (err) {
+            alert('Error deleting room: ' + (err.message || err));
+        }
     };
 
     const handleEdit = (room) => {
-        navigate(`/admin/settings/edit/${room.id}`);
+        navigate(`/admin/settings/edit/${room._id}`);
+    };
+
+    // Derived lists for search + pagination
+    const filteredRooms = rooms.filter(r => {
+        if (!searchTerm) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+            (r.roomId || r._id || '').toString().toLowerCase().includes(q) ||
+            (r.building || '').toLowerCase().includes(q) ||
+            (r.roomName || '').toLowerCase().includes(q)
+        );
+    });
+
+    const total = filteredRooms.length;
+    const startIndex = currentPage * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, total);
+    const paginatedRooms = filteredRooms.slice(startIndex, endIndex);
+
+    const prevPage = () => setCurrentPage(p => Math.max(0, p - 1));
+    const nextPage = () => {
+        const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+        setCurrentPage(p => Math.min(maxPage, p + 1));
     };
 
     return (
@@ -110,36 +143,37 @@ const ExamRoomManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {rooms.filter(r => {
-                                        if (!searchTerm) return true;
-                                        const q = searchTerm.toLowerCase();
-                                        return (
-                                            r.id.toLowerCase().includes(q) ||
-                                            r.building.toLowerCase().includes(q) ||
-                                            r.roomName.toLowerCase().includes(q)
-                                        );
-                                    }).map((r, idx) => (
-                                        <tr key={r.id}>
-                                            <td style={{ padding: '1rem' }}>{r.id}</td>
-                                            <td style={{ padding: '1rem' }}>{r.building}</td>
-                                            <td style={{ padding: '1rem' }}>{r.roomName}</td>
-                                            <td style={{ padding: '1rem' }}>{r.capacity}</td>
+                                    {paginatedRooms.map((r, idx) => (
+                                        <tr key={r._id}>
+                                            <td style={{ padding: '1rem' }}>{startIndex + idx + 1}</td>
+                                            <td style={{ padding: '1rem' }}>{r.campus}</td>
+                                            <td style={{ padding: '1rem' }}>{r.room}</td>
+                                            <td style={{ padding: '1rem' }}>{r.maxStudents}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                 <button className="btn btn-sm btn-outline-secondary" onClick={() => handleEdit(r)}>✎</button>
                                                 <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => openDelete(r)}>🗑</button>
                                             </td>
                                         </tr>
                                     ))}
+                                    {paginatedRooms.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="text-center p-4 text-muted">Không có kết quả</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                         
                         {/* Pagination */}
                         <div className="d-flex justify-content-between align-items-center p-3" style={{ borderTop: '1px solid #e9ecef' }}>
-                            <span className="text-muted">Hiển thị 1-10 trên 1234</span>
+                            <span className="text-muted">
+                                {total === 0
+                                    ? `Hiển thị 0 trên 0`
+                                    : `Hiển thị ${startIndex + 1}-${endIndex} trên ${total}`}
+                            </span>
                             <div>
-                                <button className="btn btn-outline-secondary me-2">Trước</button>
-                                <button className="btn btn-outline-secondary">Sau</button>
+                                <button className="btn btn-outline-secondary me-2" onClick={prevPage} disabled={currentPage === 0}>Trước</button>
+                                <button className="btn btn-outline-secondary" onClick={nextPage} disabled={endIndex >= total}>Sau</button>
                             </div>
                         </div>
                     </div>

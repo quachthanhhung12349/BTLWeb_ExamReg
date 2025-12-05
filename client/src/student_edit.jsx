@@ -1,45 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { fetchStudent, updateStudent } from './api/student_api.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const StudentEdit = () => {
-  const { maSv: paramMa } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [maSv, setMaSv] = useState('');
-  const [hoTen, setHoTen] = useState('');
-  const [ngaySinh, setNgaySinh] = useState('');
-  const [lop, setLop] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const [name, setName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [class_, setClass] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('students');
-      const students = raw ? JSON.parse(raw) : [];
-      const s = students.find((x) => x.maSv === paramMa);
-      if (s) {
-        setMaSv(s.maSv);
-        setHoTen(s.hoTen);
-        setNgaySinh(s.ngaySinh);
-        setLop(s.lop);
-        setEmail(s.email);
-      } else {
-        // if student not found, go back
-        navigate('/admin/student');
+    let mounted = true;
+    (async () => {
+      try {
+        const student = await fetchStudent(id);
+        if (mounted) {
+          if (student) {
+            setStudentId(student.studentId);
+            setName(student.name);
+            setBirthDate(student.birthDate?.split('T')[0] || '');
+            setClass(student.class);
+            setEmail(student.email);
+          } else {
+            navigate('/admin/student');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch student:', err);
+        if (mounted) navigate('/admin/student');
       }
-    } catch (e) {
-      navigate('/admin/student');
-    }
-  }, [paramMa, navigate]);
+    })();
+    return () => (mounted = false);
+  }, [id, navigate]);
 
   const isValidEmail = (em) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
   };
 
-  const handleOk = (e) => {
+  const handleOk = async (e) => {
     e.preventDefault();
     setError('');
-    if (!maSv || !hoTen || !ngaySinh || !lop || !email) {
+    if (!studentId || !name || !birthDate || !class_ || !email) {
       setError('Vui lòng điền tất cả các trường.');
       return;
     }
@@ -48,29 +54,21 @@ const StudentEdit = () => {
       return;
     }
 
-    const raw = localStorage.getItem('students');
-    const students = raw ? JSON.parse(raw) : [];
-
-    // check duplicates excluding current
-    const dupId = students.find((s) => s.maSv === maSv && s.maSv !== paramMa);
-    if (dupId) {
-      setError('Mã sinh viên đã tồn tại.');
-      return;
+    setLoading(true);
+    try {
+      await updateStudent(id, {
+        studentId,
+        name,
+        birthDate,
+        class: class_,
+        email
+      });
+      navigate('/admin/student');
+    } catch (err) {
+      setError(err.message || 'Lỗi khi cập nhật sinh viên.');
+    } finally {
+      setLoading(false);
     }
-    const dupEmail = students.find((s) => s.email === email && s.maSv !== paramMa);
-    if (dupEmail) {
-      setError('Email đã tồn tại.');
-      return;
-    }
-
-    const updated = students.map((s) => {
-      if (s.maSv === paramMa) {
-        return { maSv, hoTen, ngaySinh, lop, email };
-      }
-      return s;
-    });
-    localStorage.setItem('students', JSON.stringify(updated));
-    navigate('/admin/student');
   };
 
   const handleCancel = () => {
@@ -90,32 +88,32 @@ const StudentEdit = () => {
             <form onSubmit={handleOk}>
               <div className="mb-3">
                 <label className="form-label">Mã sinh viên</label>
-                <input type="text" className="form-control" value={maSv} onChange={(e) => setMaSv(e.target.value)} />
+                <input type="text" className="form-control" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Họ tên sinh viên</label>
-                <input type="text" className="form-control" value={hoTen} onChange={(e) => setHoTen(e.target.value)} />
+                <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Ngày sinh</label>
-                <input type="date" className="form-control" value={ngaySinh} onChange={(e) => setNgaySinh(e.target.value)} />
+                <input type="date" className="form-control" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Lớp</label>
-                <input type="text" className="form-control" value={lop} onChange={(e) => setLop(e.target.value)} />
+                <input type="text" className="form-control" value={class_} onChange={(e) => setClass(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
               </div>
 
               <div className="d-flex justify-content-end">
-                <button type="button" className="btn btn-secondary me-2" onClick={handleCancel}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">OK</button>
+                <button type="button" className="btn btn-secondary me-2" onClick={handleCancel} disabled={loading}>Huỷ</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Đang cập nhật...' : 'OK'}</button>
               </div>
             </form>
           </div>

@@ -7,20 +7,12 @@ const RegisteredStudentSub = new Schema({
   registerTime: { type: Date, default: Date.now }
 }, { _id: true });
 
-const RoomSub = new Schema({
-  roomId: String,
-  campus: String,
-  roomName: String,
-  maxStudents: Number,
-  currentEnrollment: { type: Number, default: 0 }
-}, { _id: false });
-
 const SessionSub = new Schema({
   examDate: Date,
   startTime: Date,
   endTime: Date,
-  subject: String,
-  room: RoomSub,
+  course: String,
+  roomId: { type: Schema.Types.ObjectId, ref: 'ExamRoom' }, // reference to exam room
   registeredStudents: [RegisteredStudentSub]
 }, { timestamps: true });
 
