@@ -73,7 +73,7 @@ const ExamRoomManagement = () => {
     };
 
     const handleEdit = (room) => {
-        navigate(`/admin/settings/edit/${room._id}`);
+        navigate(`/admin/exam-rooms/edit/${room._id}`);
     };
 
     // Derived lists for search + pagination
@@ -121,7 +121,7 @@ const ExamRoomManagement = () => {
                         </button>
                     </div>
                     {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/settings/add')}>
+                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/exam-rooms/add')}>
                         + Thêm ca thi
                     </button>
                 </div>

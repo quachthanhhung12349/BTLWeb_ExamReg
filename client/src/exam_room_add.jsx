@@ -22,7 +22,7 @@ const ExamRoomAdd = () => {
     setLoading(true);
     try {
       await createExamRoom({ roomId, building, roomName, capacity: Number(capacity) });
-      navigate('/admin/settings');
+      navigate('/admin/exam-rooms');
     } catch (err) {
       setError(err.message || 'Lỗi khi thêm ca thi.');
     } finally {
@@ -31,7 +31,7 @@ const ExamRoomAdd = () => {
   };
 
   const handleCancel = () => {
-    navigate('/admin/settings');
+    navigate('/admin/exam-rooms');
   };
 
   return (

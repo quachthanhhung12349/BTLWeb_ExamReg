@@ -7,7 +7,6 @@ import Login from './Login.jsx';
 import DashboardAdmin from './dashboard_admin.jsx';
 import CourseManagement from './course_management.jsx';
 import StudentManagement from './student_management.jsx';
-import SubjectManagement from './subject_management.jsx';
 import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
 import StudentAdd from './student_add.jsx';
@@ -49,8 +48,11 @@ function App() {
     window.location.href = '/login';
   };
 
-  const authed = isLoggedIn; 
-  const currentRole = userRole;
+  //const authed = isLoggedIn; 
+  //const currentRole = userRole;
+
+  let authed = true;
+  let currentRole = 'student';
 
   return (
     <Router>
@@ -154,7 +156,7 @@ function App() {
           element={
             authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="CourseManagement">
-                <SubjectManagement />
+                <CourseEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
@@ -176,11 +178,37 @@ function App() {
         />
 
         <Route
-          path="/admin/settings"
+          path="/admin/exam-rooms"
           element={
             authed && currentRole === 'admin' ? (
-              <LayoutAdmin activeLink="Settings">
+              <LayoutAdmin activeLink="ExamRoomManagement">
                 <ExamRoomManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam-rooms/add"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
+                <ExamRoomAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam-rooms/edit/:id"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
+                <ExamRoomEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
