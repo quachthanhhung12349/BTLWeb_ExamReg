@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react'
-import { fetchStudents, deleteStudent } from './api/student_api.jsx'
 import { useNavigate } from 'react-router-dom'
+import { fetchCourses, deleteCourse } from './api/course_api.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 
-const StudentManagement = () => {
+const CourseManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [students, setStudents] = useState([]);
+    const [courses, setCourses] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
         let mounted = true;
         (async () => {
             try {
-                const data = await fetchStudents();
-                if (mounted) setStudents(data || []);
-            } catch (err) {
-                console.error('Failed to fetch students:', err);
-                if (mounted) setStudents([]);
+                const data = await fetchCourses();
+                if (mounted) setCourses(data || []);
+            } catch (err) { 
+                console.error('Failed to fetch courses:', err);
+                if (mounted) setCourses([]);
             }
         })();
         return () => (mounted = false);
@@ -30,8 +30,8 @@ const StudentManagement = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const PAGE_SIZE = 10;
 
-    const openDelete = (student) => {
-        setDeleteTarget(student);
+    const openDelete = (course) => {
+        setDeleteTarget(course);
         setDeleteReason('');
         setShowDeleteModal(true);
     };
@@ -45,11 +45,11 @@ const StudentManagement = () => {
     const confirmDelete = async () => {
         if (!deleteReason) return;
         try {
-            await deleteStudent(deleteTarget._id);
-            setStudents((prev) => prev.filter((s) => s._id !== deleteTarget._id));
+            await deleteCourse(deleteTarget._id);
+            setCourses((prev) => prev.filter((s) => s._id !== deleteTarget._id));
             closeDelete();
         } catch (err) {
-            alert('Error deleting student: ' + err.message);
+            alert('Error deleting course: ' + (err.message || err));
         }
     };
 
@@ -59,34 +59,30 @@ const StudentManagement = () => {
 
     useEffect(() => {
         const q = (searchTerm || '').toLowerCase();
-        const filteredCount = students.filter(s => {
+        const filteredCount = courses.filter(s => {
             if (!q) return true;
             return (
-                (s.studentId || '').toLowerCase().includes(q) ||
-                (s.name || '').toLowerCase().includes(q) ||
-                (s.email || '').toLowerCase().includes(q) ||
-                ((s.class || '')).toLowerCase().includes(q)
+                (s.courseId || '').toLowerCase().includes(q) ||
+                (s.courseName || '').toLowerCase().includes(q)
             );
         }).length;
         const maxPage = Math.max(0, Math.floor((filteredCount - 1) / PAGE_SIZE));
         if (currentPage > maxPage) setCurrentPage(maxPage);
-    }, [students, searchTerm, currentPage]);
+    }, [courses, searchTerm, currentPage]);
 
-    const filteredStudents = students.filter(s => {
+    const filteredCourses = courses.filter(s => {
         if (!searchTerm) return true;
         const q = searchTerm.toLowerCase();
         return (
-            (s.studentId || '').toLowerCase().includes(q) ||
-            (s.name || '').toLowerCase().includes(q) ||
-            (s.email || '').toLowerCase().includes(q) ||
-            ((s.class || '')).toLowerCase().includes(q)
+            (s.courseId || '').toLowerCase().includes(q) ||
+            (s.courseName || '').toLowerCase().includes(q)
         );
     });
 
-    const total = filteredStudents.length;
+    const total = filteredCourses.length;
     const startIndex = currentPage * PAGE_SIZE;
     const endIndex = Math.min(startIndex + PAGE_SIZE, total);
-    const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+    const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
 
     const prevPage = () => setCurrentPage(p => Math.max(0, p - 1));
     const nextPage = () => {
@@ -94,24 +90,20 @@ const StudentManagement = () => {
         setCurrentPage(p => Math.min(maxPage, p + 1));
     };
 
-    const handleEdit = (student) => {
-        navigate(`/admin/student/edit/${student._id}`);
-    };
-
     return (
         <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header Section */}
             <div className="bg-white border-bottom p-4" style={{ borderRadius: 0 }}>
-                <h1 className="h3 mb-3">Quản lý sinh viên</h1>
+                <h1 className="h3 mb-3">Quản lý học phần</h1>
                 
                 {/* Search Bar and Button Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between'}}>
+                <div style={{ display: 'flex', justifyContent: 'space-between'}}>
                     {/* Search Bar */}
                     <div className="input-group" style={{ maxWidth: '900px' }}>
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Tìm kiếm sinh viên..."
+                            placeholder="Tìm kiếm học phần..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{ borderRadius: '0.375rem' }}
@@ -121,8 +113,8 @@ const StudentManagement = () => {
                         </button>
                     </div>
                     {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/student/add')}>
-                        + Thêm sinh viên
+                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/course/add')}>
+                        + Thêm học phần
                     </button>
                 </div>
             </div>
@@ -135,31 +127,27 @@ const StudentManagement = () => {
                             <table className="table table-striped table-hover m-0">
                                 <thead className="table-light">
                                     <tr>
-                                        <th style={{ padding: '1rem' }}>Mã sinh viên</th>
-                                        <th style={{ padding: '1rem' }}>Họ tên sinh viên</th>
-                                        <th style={{ padding: '1rem' }}>Ngày sinh</th>
-                                        <th style={{ padding: '1rem' }}>Lớp</th>
-                                        <th style={{ padding: '1rem' }}>Email</th>
+                                        <th style={{ padding: '1rem' }}>Mã học phần</th>
+                                        <th style={{ padding: '1rem' }}>Tên học phần</th>
+                                        <th style={{ padding: '1rem' }}>Số tín chỉ</th>
                                         <th style={{ padding: '1rem', textAlign: 'center' }}>Hành động</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedStudents.map((s, idx) => (
+                                    {paginatedCourses.map((s, idx) => (
                                         <tr key={s._id}>
-                                            <td style={{ padding: '1rem' }}>{s.studentId}</td>
-                                            <td style={{ padding: '1rem' }}>{s.name}</td>
-                                            <td style={{ padding: '1rem' }}>{s.birthDate ? new Date(s.birthDate).toLocaleDateString('vi-VN') : '-'}</td>
-                                            <td style={{ padding: '1rem' }}>{s.class}</td>
-                                            <td style={{ padding: '1rem' }}>{s.email}</td>
+                                            <td style={{ padding: '1rem' }}>{s.courseId || '-'}</td>
+                                            <td style={{ padding: '1rem' }}>{s.courseName || '-'}</td>
+                                            <td style={{ padding: '1rem' }}>{s.credits || '-'}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                <button className="btn btn-sm btn-outline-secondary" onClick={() => handleEdit(s)}>✎</button>
+                                                <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate(`/admin/course/edit/${s._id}`)}>✎</button>
                                                 <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => openDelete(s)}>🗑</button>
                                             </td>
                                         </tr>
                                     ))}
-                                    {paginatedStudents.length === 0 && (
+                                    {paginatedCourses.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="text-center p-4 text-muted">Không có kết quả</td>
+                                            <td colSpan={4} className="text-center p-4 text-muted">Không có kết quả</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -189,14 +177,14 @@ const StudentManagement = () => {
                         <div className="card" style={{ width: 520 }}>
                             <div className="card-body">
                                 <h5 className="card-title">Xác nhận xoá</h5>
-                                <p>Bạn có muốn xoá sinh viên này ra khỏi danh sách sinh viên không?</p>
+                                <p>Bạn có muốn xoá học phần này ra khỏi danh sách không?</p>
                                 <div className="mb-3">
-                                    <label className="form-label">Chọn nguyên nhân xoá sinh viên</label>
+                                    <label className="form-label">Chọn nguyên nhân xoá</label>
                                     <select className="form-select" value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)}>
                                         <option value="">-- Chọn nguyên nhân --</option>
-                                        <option value="Buộc thôi học">Buộc thôi học</option>
-                                        <option value="Thôi học">Thôi học</option>
-                                        <option value="Đã tốt nghiệp">Đã tốt nghiệp</option>
+                                        <option value="Hủy chương trình">Hủy chương trình</option>
+                                        <option value="Trùng mã">Trùng mã</option>
+                                        <option value="Lỗi dữ liệu">Lỗi dữ liệu</option>
                                         <option value="Nguyên nhân khác">Nguyên nhân khác</option>
                                     </select>
                                 </div>
@@ -213,4 +201,4 @@ const StudentManagement = () => {
     );
 }
 
-export default StudentManagement;
+export default CourseManagement;
