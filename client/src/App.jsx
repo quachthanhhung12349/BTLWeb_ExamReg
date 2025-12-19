@@ -48,11 +48,8 @@ function App() {
     window.location.href = '/login';
   };
 
-  //const authed = isLoggedIn; 
-  //const currentRole = userRole;
-
-  let authed = true;
-  let currentRole = 'student';
+   const authed = isLoggedIn; 
+  const currentRole = userRole;
 
   return (
     <Router>
