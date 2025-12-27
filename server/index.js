@@ -3,9 +3,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-
+const authRouter = require('./routes/auth');
 const studentsRouter = require('./routes/students');
 const courseRouter = require('./routes/courses');
+const examsRouter = require('./routes/exams');
 const examRoomsRouter = require('./routes/examRooms');
 
 const app = express();
@@ -46,16 +47,17 @@ app.post('/api/login', (req, res) => {
     }
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/students', studentsRouter);
 app.use('/api/courses', courseRouter);
+app.use('/api/exams', examsRouter);
 app.use('/api/exam-rooms', examRoomsRouter);
 
 
-const PORT = process.env.PORT || 5000;
-mongoose.connect(process.env.MONGO_URI)
-.then(()=> {
-console.log('MongoDB connected');
-app.listen(PORT, () => console.log('Server running on ${PORT}'));
+const PORT = process.env.PORT || 5001;
+mongoose.connect(process.env.MONGO_URI).then(()=> {
+  console.log('MongoDB connected');
+  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 })
 .catch(err => {
 console.error('MongoDB connection error:', err);

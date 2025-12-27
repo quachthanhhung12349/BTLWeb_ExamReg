@@ -13,6 +13,7 @@ import StudentAdd from './student_add.jsx';
 import StudentEdit from './student_edit.jsx';
 import CourseAdd from './course_add.jsx';
 import CourseEdit from './course_edit.jsx';
+import ExamDetail from './exam_detail.jsx';
 import ExamRoomAdd from './exam_room_add.jsx';
 import ExamRoomEdit from './exam_room_edit.jsx';
 import StudentExamRegistrationPage from './student_exam_registration.jsx';
@@ -167,6 +168,19 @@ function App() {
             authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="Reports">
                 <ExamManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam/:id" // :id là tham số động
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="Reports">
+                <ExamDetail />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
