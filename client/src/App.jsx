@@ -5,10 +5,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LayoutAdmin from './layout_admin.jsx';
 import Login from './Login.jsx';
 import DashboardAdmin from './dashboard_admin.jsx';
+import CourseManagement from './course_management.jsx';
 import StudentManagement from './student_management.jsx';
-import SubjectManagement from './subject_management.jsx';
 import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
+import StudentAdd from './student_add.jsx';
+import StudentEdit from './student_edit.jsx';
+import CourseAdd from './course_add.jsx';
+import CourseEdit from './course_edit.jsx';
+import ExamRoomAdd from './exam_room_add.jsx';
+import ExamRoomEdit from './exam_room_edit.jsx';
 import StudentExamRegistrationPage from './student_exam_registration.jsx';
 
 import './App.css'
@@ -42,7 +48,7 @@ function App() {
     window.location.href = '/login';
   };
 
-  const authed = isLoggedIn; 
+   const authed = isLoggedIn; 
   const currentRole = userRole;
 
   return (
@@ -91,11 +97,63 @@ function App() {
         />
 
         <Route
+          path="/admin/student/add"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="StudentManagement">
+                <StudentAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/student/edit/:id"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="StudentManagement">
+                <StudentEdit />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
           path="/admin/course"
           element={
             authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="CourseManagement">
-                <SubjectManagement />
+                <CourseManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/course/add"
+          element={
+            authed ? (
+              <LayoutAdmin activeLink="CourseManagement">
+                <CourseAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/course/edit/:id"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="CourseManagement">
+                <CourseEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
@@ -117,11 +175,37 @@ function App() {
         />
 
         <Route
-          path="/admin/settings"
+          path="/admin/exam-rooms"
           element={
             authed && currentRole === 'admin' ? (
-              <LayoutAdmin activeLink="Settings">
+              <LayoutAdmin activeLink="ExamRoomManagement">
                 <ExamRoomManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam-rooms/add"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
+                <ExamRoomAdd />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam-rooms/edit/:id"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
+                <ExamRoomEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
