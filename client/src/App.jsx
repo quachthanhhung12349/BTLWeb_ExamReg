@@ -7,6 +7,7 @@ import Login from './Login.jsx';
 import DashboardAdmin from './dashboard_admin.jsx';
 import CourseManagement from './course_management.jsx';
 import StudentManagement from './student_management.jsx';
+import RegConditionManagement from './reg_condition_management.jsx';
 import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
 import StudentAdd from './student_add.jsx';
@@ -220,6 +221,19 @@ function App() {
             authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="ExamRoomManagement">
                 <ExamRoomEdit />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/reg-conditions"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="RegConditionManagement">
+                <RegConditionManagement />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />

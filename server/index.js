@@ -8,6 +8,7 @@ const studentsRouter = require('./routes/students');
 const courseRouter = require('./routes/courses');
 const examsRouter = require('./routes/exams');
 const examRoomsRouter = require('./routes/examRooms');
+const courseStudentsRouter = require('./routes/courseStudents');
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/students', studentsRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/exam-rooms', examRoomsRouter);
+app.use('/api/course-students', courseStudentsRouter);
 
 
 const PORT = process.env.PORT || 5001;

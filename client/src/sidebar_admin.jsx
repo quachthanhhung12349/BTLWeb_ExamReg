@@ -9,6 +9,7 @@ const items = [
     { key: 'CourseManagement', label: 'Quản lý học phần', path: '/admin/course' },
     { key: 'Reports', label: 'Quản lý kỳ thi', path: '/admin/reports' },
     { key: 'Settings', label: 'Quản lý phòng thi', path: '/admin/exam-rooms' },
+    { key: 'Conditions', label: 'Quản lý điều kiện thi', path: '/admin/reg-conditions' },
 ];
 
 const SidebarAdmin = ({ activeLink }) => {

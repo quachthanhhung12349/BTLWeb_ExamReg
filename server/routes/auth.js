@@ -10,11 +10,10 @@ router.post('/login', async (req, res) => {
         // --- 1. TÌM TRONG DANH SÁCH SINH VIÊN ---
         const student = await Student.findOne({ 'account.username': username });
         if (student) {
-            // So sánh pass (Lưu ý: code này so sánh pass thường, nếu db đã hash thì dùng bcrypt)
             if (student.account.password === password) { 
                 return res.json({
                     success: true,
-                    role: 'student', // Quan trọng: Trả về role để Frontend điều hướng
+                    role: 'student',
                     user: {
                         id: student.studentId,
                         name: student.name,
@@ -32,7 +31,7 @@ router.post('/login', async (req, res) => {
             if (staff.account.password === password) {
                 return res.json({
                     success: true,
-                    role: 'admin', // Quan trọng: Trả về role admin
+                    role: 'admin',
                     user: {
                         id: staff._id,
                         name: staff.name,

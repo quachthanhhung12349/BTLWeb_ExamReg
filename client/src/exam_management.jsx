@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import { getExams, createExam, deleteExam } from './api/exam_api'; // Import API
+import { getExams, createExam, deleteExam } from './api/exam_api';
 import { useNavigate } from 'react-router-dom';
 
 const ExamManagement = () => {
     const [exams, setExams] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [showModal, setShowModal] = useState(false); // State để hiện popup thêm mới
+    const [showModal, setShowModal] = useState(false);
     const navigate = useNavigate();
     
     // State form thêm mới
@@ -61,7 +61,7 @@ const ExamManagement = () => {
        <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* --- HEADER --- */}
             <div className="bg-white border-bottom p-4" style={{ borderRadius: 0 }}>
-                <h1 className="h3 mb-3">Quản lý Kỳ thi</h1> {/* Đổi tiêu đề */}
+                <h1 className="h3 mb-3">Quản lý kỳ thi</h1>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between'}}>
                     <div className="input-group" style={{ maxWidth: '600px' }}>
@@ -125,7 +125,7 @@ const ExamManagement = () => {
                 </div>
             </div>
 
-            {/* --- MODAL THÊM MỚI (Popup đơn giản) --- */}
+            {/* --- MODAL THÊM MỚI --- */}
             {showModal && (
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
                     <div className="modal-dialog">

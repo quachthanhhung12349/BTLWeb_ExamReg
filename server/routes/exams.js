@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose'); // Import mongoose để check ID
+const mongoose = require('mongoose');
 const Exam = require('../models/Exam'); 
 
-// 1. Lấy danh sách tất cả kỳ thi
 // GET /api/exams
 router.get('/', async (req, res) => {
     try {
@@ -15,7 +14,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. Lấy chi tiết 1 kỳ thi (kèm các ca thi)
 // GET /api/exams/:id
 router.get('/:id', async (req, res) => {
     try {
@@ -28,7 +26,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// 3. Tạo kỳ thi mới
 // POST /api/exams
 router.post('/', async (req, res) => {
     const { examId, examName, startDate, endDate } = req.body;
@@ -59,7 +56,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// 4. Xóa kỳ thi
 // DELETE /api/exams/:id
 router.delete('/:id', async (req, res) => {
     try {
@@ -71,11 +67,6 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// ==========================================
-// PHẦN QUAN TRỌNG: XỬ LÝ CA THI (SESSIONS)
-// ==========================================
-
-// 5. Thêm Ca thi vào Kỳ thi (ĐÃ FIX LỖI TIME & ROOMID)
 // POST /api/exams/:id/sessions
 router.post('/:id/sessions', async (req, res) => {
     const { course, examDate, startTime, endTime, roomId } = req.body;
@@ -84,7 +75,6 @@ router.post('/:id/sessions', async (req, res) => {
         const exam = await Exam.findById(req.params.id);
         if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
 
-        // --- FIX LỖI 1: DATE ---
         // Ghép ngày + giờ thành đối tượng Date chuẩn
         // Ví dụ: "2026-01-05T09:00:00"
         const startDateTime = new Date(`${examDate}T${startTime}`);
@@ -94,7 +84,6 @@ router.post('/:id/sessions', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Định dạng ngày giờ không hợp lệ' });
         }
 
-        // --- FIX LỖI 2: ROOM ID ---
         // Nếu roomId là tên phòng (VD: "302-G2"), nó không phải ObjectId -> Gán null
         let validRoomId = null;
         if (roomId && mongoose.Types.ObjectId.isValid(roomId)) {
@@ -119,7 +108,6 @@ router.post('/:id/sessions', async (req, res) => {
     }
 });
 
-// 6. Xóa Ca thi
 // DELETE /api/exams/:examId/sessions/:sessionId
 router.delete('/:examId/sessions/:sessionId', async (req, res) => {
     try {
@@ -134,6 +122,44 @@ router.delete('/:examId/sessions/:sessionId', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+});
+
+// PUT /api/exams/:examId/sessions/:sessionId
+router.put('/:examId/sessions/:sessionId', async (req, res) => {
+    const { course, examDate, startTime, endTime, roomId } = req.body;
+
+    try {
+        const exam = await Exam.findById(req.params.examId);
+        if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
+
+        // Tìm ca thi con trong mảng sessions
+        const session = exam.sessions.id(req.params.sessionId);
+        if (!session) return res.status(404).json({ success: false, message: 'Không tìm thấy ca thi' });
+
+        // Xử lý ngày giờ (giống lúc thêm mới)
+        if (examDate && startTime) {
+            session.startTime = new Date(`${examDate}T${startTime}`);
+        }
+        if (examDate && endTime) {
+            session.endTime = new Date(`${examDate}T${endTime}`);
+        }
+        
+        // Cập nhật các thông tin khác
+        if (course) session.course = course;
+        if (examDate) session.examDate = examDate;
+        
+        // Chỉ cập nhật roomId nếu có gửi lên và hợp lệ
+        if (roomId && mongoose.Types.ObjectId.isValid(roomId)) {
+            session.roomId = roomId;
+        }
+
+        await exam.save();
+        res.json({ success: true, message: 'Cập nhật ca thi thành công!', sessions: exam.sessions });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi sửa ca thi' });
     }
 });
 
