@@ -16,6 +16,8 @@ import CourseEdit from './course_edit.jsx';
 import ExamRoomAdd from './exam_room_add.jsx';
 import ExamRoomEdit from './exam_room_edit.jsx';
 import StudentExamRegistrationPage from './student_exam_registration.jsx';
+import StudentCoursesPage from './student_courses.jsx';
+import StudentExamSlipPage from './student_exam_slip.jsx';
 
 import './App.css'
 
@@ -218,7 +220,42 @@ function App() {
           path="/student" 
           element={
             authed && currentRole === 'student' ? (
-              <StudentExamRegistrationPage onLogout={handleLogout} /> 
+              <StudentExamRegistrationPage onLogout={handleLogout} activeTab="registration" /> 
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+
+        <Route 
+          path="/student/registration" 
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentExamRegistrationPage onLogout={handleLogout} activeTab="registration" /> 
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+
+        {/* 2. Trang Xem môn phải thi */}
+        <Route 
+          path="/student/courses" 
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentCoursesPage onLogout={handleLogout} activeTab="my-courses" /> 
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+
+        {/* 3. Trang Phiếu báo dự thi */}
+        <Route 
+          path="/student/exam-slip" 
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentExamSlipPage onLogout={handleLogout} activeTab="exam-slip" /> 
             ) : (
               <Navigate to="/login" replace />
             )
