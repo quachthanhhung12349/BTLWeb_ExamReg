@@ -90,7 +90,6 @@ const ExamSlipPage = ({ onLogout }) => {
           <div className="text-center p-5">Đang tải dữ liệu phiếu báo...</div>
         ) : (
           <div className="row h-100">
-            {/* Cột chọn môn học - Ẩn khi in */}
             <div className="col-md-4 mb-4 d-print-none">
               <div className="card shadow-sm border-0 rounded-3 h-100">
                 <div className="card-header bg-white border-0 pt-4 pb-0">
@@ -113,7 +112,6 @@ const ExamSlipPage = ({ onLogout }) => {
               </div>
             </div>
 
-            {/* Phiếu báo dự thi chi tiết */}
             <div className="col-md-8">
               {selectedExam && studentData ? (
                 <div className="card shadow border-0 p-5 rounded-4 bg-white position-relative overflow-hidden">
@@ -125,14 +123,12 @@ const ExamSlipPage = ({ onLogout }) => {
                   </div>
 
                   <div className="row mb-4 info-container align-items-center">
-                    {/* BÊN TRÁI: KHUNG ẢNH */}
                     <div className="col-4 photo-side">
                       <div className="photo-frame">
                         <div>Ảnh thẻ<br />3 x 4</div>
                       </div>
                     </div>
 
-                    {/* BÊN PHẢI: THÔNG TIN SINH VIÊN */}
                     <div className="col-8 text-side">
                       <div className="info-row">
                         <span className="text-muted small text-uppercase fw-bold info-label">Họ và tên:</span>
@@ -179,7 +175,6 @@ const ExamSlipPage = ({ onLogout }) => {
                     </div>
 
                     <div className="col-md-6 mt-4">
-                      {/* PHẦN PHÒNG THI ĐÃ ĐƯỢC HỢP NHẤT */}
                       <div className="d-flex align-items-start mb-4">
                         <div className="bg-light p-2 rounded-3 me-3"><i className="bi bi-geo-alt text-primary"></i></div>
                         <div>

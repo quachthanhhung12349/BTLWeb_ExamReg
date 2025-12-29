@@ -2,14 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
-// Thêm import Modal từ bootstrap (nếu bạn dùng thư viện bootstrap js truyền thống thì dùng qua thuộc tính data-bs)
-// Ở đây tôi hướng dẫn cách dùng state để quản lý Modal thủ công cho linh hoạt
 
 const CourseListPage = ({ onLogout }) => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // State cho Modal chi tiết
+
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -29,7 +26,6 @@ const CourseListPage = ({ onLogout }) => {
     }
   };
 
-  // Hàm xử lý khi nhấn "Xem chi tiết"
   const handleShowDetails = async (courseId) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/student-courses/details/${courseId}`);
@@ -57,8 +53,8 @@ const CourseListPage = ({ onLogout }) => {
                   <p className="text-muted small mb-0">Giảng viên: {course.professor}</p>
                 </div>
                 <div className="card-footer bg-white border-0 pb-3">
-                  <button 
-                    className="btn btn-outline-primary btn-sm w-100" 
+                  <button
+                    className="btn btn-outline-primary btn-sm w-100"
                     onClick={() => handleShowDetails(course.courseId)}
                   >
                     Xem chi tiết học phần
@@ -69,7 +65,6 @@ const CourseListPage = ({ onLogout }) => {
           ))}
         </div>
 
-        {/* --- MODAL CHI TIẾT MÔN HỌC --- */}
         {showModal && selectedCourse && (
           <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-lg modal-dialog-centered">

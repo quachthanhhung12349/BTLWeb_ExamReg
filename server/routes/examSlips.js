@@ -9,10 +9,8 @@ router.get('/:studentId', async (req, res) => {
         if (!student) return res.status(404).json({ message: "SV không tồn tại" });
 
         const slips = await Promise.all(student.registeredExams.map(async (reg) => {
-            // 1. Tìm Kỳ thi
             const exam = await Exam.findById(reg.examId).populate('sessions.roomId');
             
-            // Nếu không tìm thấy bằng ID (do seed lại), cố gắng tìm bằng tên kỳ thi
             let currentExam = exam;
             if (!currentExam) {
                 currentExam = await Exam.findOne({ examName: reg.examName }).populate('sessions.roomId');
@@ -20,8 +18,6 @@ router.get('/:studentId', async (req, res) => {
             
             if (!currentExam) return null;
 
-            // 2. Tìm Ca thi (Session)
-            // Ưu tiên tìm theo sessionId, nếu không thấy thì tìm theo mã môn học (courseId)
             let session = currentExam.sessions.find(s => 
                 s._id.equals(reg.sessionId) || 
                 (s.course && s.course.includes(reg.courseId))
@@ -29,7 +25,6 @@ router.get('/:studentId', async (req, res) => {
 
             if (!session) return null;
 
-            // 3. Tính Số báo danh (SBD)
             const seatIdx = session.registeredStudents.findIndex(s => 
                 s.studentId.toString() === student._id.toString()
             );

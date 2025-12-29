@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios"; // Đừng quên cài đặt: npm install axios
+import axios from "axios";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
 
@@ -12,7 +12,6 @@ const RegistrationPage = ({ onLogout }) => {
   const studentId = "23021701";
   const API_BASE_URL = "http://localhost:5000/api/registration";
 
-  // 1. Hàm lấy dữ liệu từ Backend
   const fetchSubjects = async () => {
     try {
       setLoading(true);
@@ -26,12 +25,11 @@ const RegistrationPage = ({ onLogout }) => {
     }
   };
 
-  // Gọi hàm fetch khi component mount
   useEffect(() => {
     fetchSubjects();
   }, []);
 
-  // 2. Xử lý Đăng ký
+  // Xử lý Đăng ký
   const handleRegister = async (courseId) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/register`, {
@@ -40,14 +38,12 @@ const RegistrationPage = ({ onLogout }) => {
       });
 
       if (response.data.success) {
-        // CẬP NHẬT TRỰC TIẾP STATE ĐỂ UI THAY ĐỔI NGAY LẬP TỨC
         setSubjects(prevSubjects =>
           prevSubjects.map(s =>
             s.code === courseId ? { ...s, registered: true } : s
           )
         );
         alert("Đăng ký thành công!");
-        // Vẫn gọi fetchSubjects để đảm bảo dữ liệu đồng bộ hoàn toàn với DB
         fetchSubjects();
       }
     } catch (error) {
@@ -55,7 +51,7 @@ const RegistrationPage = ({ onLogout }) => {
     }
   };
 
-  // 3. Xử lý Hủy đăng ký
+  // Xử lý Hủy đăng ký
   const handleUnregister = async (courseId) => {
     if (window.confirm("Bạn có chắc chắn muốn hủy đăng ký môn này?")) {
       try {
@@ -65,7 +61,6 @@ const RegistrationPage = ({ onLogout }) => {
         });
 
         if (response.data.success) {
-          // CẬP NHẬT TRỰC TIẾP STATE
           setSubjects(prevSubjects =>
             prevSubjects.map(s =>
               s.code === courseId ? { ...s, registered: false } : s

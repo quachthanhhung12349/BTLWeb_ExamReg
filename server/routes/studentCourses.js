@@ -4,7 +4,6 @@ const Course = require('../models/Course');
 
 router.get('/all', async (req, res) => {
     try {
-        // Kiểm tra xem Model Course có đang kết nối đúng không
         const count = await Course.countDocuments();
         console.log(`[DEBUG] Số lượng bản ghi tìm thấy trong DB: ${count}`);
 
@@ -34,7 +33,6 @@ router.get('/details/:courseId', async (req, res) => {
             return res.status(404).json({ message: "Không tìm thấy thông tin môn học" });
         }
 
-        // Trả về toàn bộ object course (bao gồm schedule và enrolledStudents)
         res.json(course);
     } catch (error) {
         res.status(500).json({ message: "Lỗi hệ thống" });

@@ -1,7 +1,6 @@
 require('dotenv').config({ path: '../.env' });
 const mongoose = require('mongoose');
 
-// --- GIỮ NGUYÊN TOÀN BỘ GENERATORS GỐC ---
 const firstNames = ['Lý', 'Trần', 'Nguyễn', 'Hoàng', 'Võ', 'Phan', 'Đặng', 'Bùi', 'Đinh', 'Phạm'];
 const lastNames = ['Đức Tú', 'Văn A', 'Thị B', 'Minh C', 'Hùng D', 'Linh E', 'Phương F', 'Quyền G', 'Thanh H', 'Kiên I'];
 const classes = ['K68I-CS1', 'K68I-CS2', 'K68I-CS3', 'K68I-SE1', 'K68I-IT1'];
@@ -42,7 +41,7 @@ async function seed() {
     console.log('✓ Connected to MongoDB');
     const db = mongoose.connection.db;
 
-    // Clear existing data (GIỮ NGUYÊN)
+    // Clear existing data
     console.log('🗑️  Clearing existing collections...');
     await db.collection('students').deleteMany({});
     await db.collection('staffs').deleteMany({});
@@ -51,7 +50,7 @@ async function seed() {
     await db.collection('exams').deleteMany({});
     await db.collection('notifications').deleteMany({});
 
-    // 1. Generate Exam Rooms (GIỮ NGUYÊN)
+    // 1. Generate Exam Rooms
     console.log('🏫 Generating Exam Rooms...');
     const examRoomDocs = [];
     for (let i = 0; i < 7; i++) {
@@ -65,7 +64,7 @@ async function seed() {
     const examRoomResult = await db.collection('exam_rooms').insertMany(examRoomDocs);
     const examRoomIds = Object.values(examRoomResult.insertedIds);
 
-    // 2. Generate staffs (GIỮ NGUYÊN)
+    // 2. Generate staffs
     console.log('👥 Generating staffs...');
     const staffDocs = [];
     for (let i = 0; i < 3; i++) {
@@ -82,13 +81,13 @@ async function seed() {
     const staffResult = await db.collection('staffs').insertMany(staffDocs);
     const staffIds = Object.values(staffResult.insertedIds);
 
-    // 3. Generate Courses (CHỈ THÊM LOGIC TÁCH ID ĐỂ TRUY VẤN)
+    // 3. Generate Courses
     console.log('📚 Generating Courses...');
     const courseDocs = [];
     for (let i = 0; i < 5; i++) {
       const fullCourseName = courses[i];
       courseDocs.push({
-        courseId: fullCourseName.split(' - ')[0], // Tách lấy INT2204
+        courseId: fullCourseName.split(' - ')[0], 
         courseName: fullCourseName,
         credits: 2 + Math.floor(Math.random() * 4),
         professor: `${randomElement(firstNames)} ${randomElement(lastNames)}`,
@@ -104,7 +103,7 @@ async function seed() {
     const courseResult = await db.collection('courses').insertMany(courseDocs);
     const courseIds = Object.values(courseResult.insertedIds);
 
-    // 4. Generate Students (KHÔI PHỤC mảng notifications GỐC)
+    // 4. Generate Students
     console.log('👨‍🎓 Generating Students...');
     const studentDocs = [];
     for (let i = 0; i < 40; i++) {
@@ -112,7 +111,7 @@ async function seed() {
       const name = `${randomElement(firstNames)} ${randomElement(lastNames)}`;
       const enrolledCourses = courseIds.slice(0, Math.floor(Math.random() * 3) + 1);
 
-      const notifications = []; // Mảng notifications GỐC
+      const notifications = []; 
       for (let j = 0; j < Math.floor(Math.random() * 3); j++) {
         notifications.push({
           title: randomElement(notificationTitles),
@@ -129,7 +128,7 @@ async function seed() {
         email: `${studentId}@vnu.edu.vn`,
         birthDate: randomDate(new Date(2002, 0, 1), new Date(2006, 0, 1)),
         account: { username: studentId, password: 'hashed_password_here', role: 'Student', lastLogin: randomDate() },
-        notifications, // GIỮ NGUYÊN
+        notifications,
         registeredExams: [],
         courses: enrolledCourses.map((cid, idx) => ({
           courseId: courseDocs[idx].courseId,
@@ -138,7 +137,7 @@ async function seed() {
         }))
       });
 
-      // Thêm SV vào bảng Course để Màn hình 2 xem chi tiết có bảng sinh viên
+      // Thêm SV vào bảng Course 
       for (const cidIdx of enrolledCourses.map((id, idx) => idx)) {
         await db.collection('courses').updateOne(
           { _id: courseIds[cidIdx] },
@@ -156,30 +155,22 @@ async function seed() {
     console.log('📋 Generating Exams with Random Sessions...');
     const examDocs = [];
 
-    // Tạo 3 đợt thi (HK1, HK2, CK)
     for (let i = 0; i < 3; i++) {
-      // Ngày bắt đầu kỳ thi ngẫu nhiên trong khoảng tháng 11, 12 năm 2024
       const startDate = randomDate(new Date(2024, 10, 15), new Date(2024, 11, 15));
-      // Ngày kết thúc kỳ thi sau đó 14 ngày
       const endDate = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
-      
+  
       const sessions = [];
 
       // Lặp qua TẤT CẢ môn học để đảm bảo môn nào cũng có lịch
       for (let s = 0; s < courseDocs.length; s++) {
-        // Ngày thi ngẫu nhiên nằm trong khoảng startDate và endDate của kỳ thi
         const sessionDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
-        
-        // Giờ bắt đầu ngẫu nhiên từ 7h sáng đến 15h chiều
         const startHour = 7 + Math.floor(Math.random() * 9); 
         
         sessions.push({
           _id: new mongoose.Types.ObjectId(),
           examDate: sessionDate,
-          // Set giờ thi ngẫu nhiên
           startTime: new Date(new Date(sessionDate).setHours(startHour, 0, 0, 0)),
           endTime: new Date(new Date(sessionDate).setHours(startHour + 2, 0, 0, 0)),
-          // Tên môn khớp 100% với database
           course: `${courseDocs[s].courseId} - ${courseDocs[s].courseName}`, 
           roomId: randomElement(examRoomIds), 
           registeredStudents: [] 
@@ -197,8 +188,7 @@ async function seed() {
     const examResult = await db.collection('exams').insertMany(examDocs);
     console.log(`  ✓ Inserted ${Object.values(examResult.insertedIds).length} exams with random dates`);
 
-    // --- LOGIC ĐỒNG BỘ: Cập nhật registeredExams cho sinh viên từ dữ liệu ngẫu nhiên vừa tạo ---
-    // Điều này đảm bảo Màn hình 3 có dữ liệu ngay lập tức mà không phá vỡ logic team bạn
+    // Cập nhật registeredExams cho sinh viên từ dữ liệu ngẫu nhiên vừa tạo
     for (const exam of examDocs) {
       for (const session of exam.sessions) {
         for (const regSt of session.registeredStudents) {
@@ -220,7 +210,7 @@ async function seed() {
       }
     }
 
-    // 6. Generate Notifications (GIỮ NGUYÊN 100%)
+    // 6. Generate Notifications
     console.log('🔔 Generating Notifications...');
     const notificationDocs = [];
     for (let i = 0; i < 5; i++) {
