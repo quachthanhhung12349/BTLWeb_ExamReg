@@ -1,4 +1,5 @@
 import React from 'react';
+import SidebarAdmin from './sidebar_admin.jsx';
 
 const LayoutAdmin = ({ children, activeLink }) => {
     return (
