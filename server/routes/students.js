@@ -17,13 +17,13 @@ router.get('/:id', async (req, res) => {
 
 // create
 router.post('/', async (req, res) => {
-  const { studentId, name, class: className, email, birthDate, account } = req.body;
+  const { studentId, name, class: className, email, birthDate, account, eligibleForExam } = req.body;
   if (!name || !email) return res.status(400).json({ message: 'Missing fields' });
 
   if (await Student.findOne({ email })) return res.status(409).json({ message: 'Email exists' });
   if (studentId && await Student.findOne({ studentId })) return res.status(409).json({ message: 'studentId exists' });
 
-  const s = new Student({ studentId, name, class: className, email, birthDate, account });
+  const s = new Student({ studentId, name, class: className, email, birthDate, account, eligibleForExam });
   await s.save();
   res.status(201).json(s);
 });

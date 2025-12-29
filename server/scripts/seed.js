@@ -151,6 +151,7 @@ async function seed() {
           role: 'Student',
           lastLogin: randomDate()
         },
+        eligibleForExam: Math.random() > 0.5,
         notifications,
         registeredExams: [],
         courses: enrolledCourses.map((cid, idx) => ({

@@ -36,6 +36,7 @@ const StudentSchema = new Schema({
   email: { type: String, required: true, unique: true, index: true },
   birthDate: Date,
   account: AccountSub,
+  eligibleForExam: { type: Boolean, default: false },
   notifications: [NotificationSub],
   registeredExams: [RegisteredExamSub],
   courses: [CourseEnrollmentSub]

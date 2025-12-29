@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchExamRooms, deleteExamRoom } from './api/exam_room_api.jsx'
+import { fetchExamRooms, deleteExamRoom, createExamRoom } from './api/exam_room_api.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -28,6 +28,7 @@ const ExamRoomManagement = () => {
     const [deleteReason, setDeleteReason] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
     const PAGE_SIZE = 10;
+    const [importing, setImporting] = useState(false);
 
     const openDelete = (room) => {
         setDeleteTarget(room);
@@ -72,6 +73,50 @@ const ExamRoomManagement = () => {
         }
     };
 
+    const parseCsv = (text) => {
+        const lines = (text || '').trim().split(/\r?\n/).filter(Boolean);
+        if (!lines.length) return [];
+        const headers = lines[0].split(',').map(h => h.trim());
+        return lines.slice(1).map(line => {
+            const cells = line.split(',');
+            const obj = {};
+            headers.forEach((h, idx) => obj[h] = (cells[idx] || '').trim());
+            return obj;
+        });
+    };
+
+    const handleImportCsv = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImporting(true);
+        try {
+            const text = await file.text();
+            const rows = parseCsv(text);
+            let success = 0;
+            for (const row of rows) {
+                try {
+                    await createExamRoom({
+                        roomId: row.roomId,
+                        building: row.building,
+                        roomName: row.roomName,
+                        capacity: row.capacity ? Number(row.capacity) : undefined
+                    });
+                    success += 1;
+                } catch (err) {
+                    console.error('Failed to import exam room row', row, err);
+                }
+            }
+            const data = await fetchExamRooms();
+            setRooms(data || []);
+            alert(`Đã import ${success} ca thi/phòng thi.`);
+        } catch (err) {
+            alert(err.message || 'Lỗi import CSV phòng thi');
+        } finally {
+            setImporting(false);
+            e.target.value = '';
+        }
+    };
+
     const handleEdit = (room) => {
         navigate(`/admin/settings/edit/${room._id}`);
     };
@@ -102,7 +147,7 @@ const ExamRoomManagement = () => {
        <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header Section */}
             <div className="bg-white border-bottom p-4" style={{ borderRadius: 0 }}>
-                <h1 className="h3 mb-3">Quản lý ca thi</h1>
+                <h1 className="h3 mb-3">Quản lý phòng thi</h1>
                 
                 {/* Search Bar and Button Row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between'}}>
@@ -121,14 +166,23 @@ const ExamRoomManagement = () => {
                         </button>
                     </div>
                     {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/settings/add')}>
-                        + Thêm ca thi
-                    </button>
+                    <div className="d-flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button className="btn btn-outline-secondary" onClick={() => document.getElementById('examroom-import-input').click()} disabled={importing}>
+                            📥 Import CSV
+                        </button>
+                        <input id="examroom-import-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+                        <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/exam-rooms/add')}>
+                            + Thêm phòng thi
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Content Section */}
             <div className="container-fluid p-4" style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
+                <div className="alert alert-info" style={{ fontSize: '0.9rem' }}>
+                    <strong>Định dạng CSV (phòng thi/ca thi):</strong> header: <code>roomId,building,roomName,capacity</code> (capacity là số).
+                </div>
                 <div className="card" style={{ boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)' }}>
                     <div className="card-body p-0">
                         <div style={{ overflowX: 'auto' }}>
@@ -188,12 +242,12 @@ const ExamRoomManagement = () => {
                             <div className="card" style={{ width: 520 }}>
                                 <div className="card-body">
                                     <h5 className="card-title">Xác nhận xoá</h5>
-                                    <p>Bạn có muốn xoá ca thi này ra khỏi danh sách không?</p>
+                                    <p>Bạn có muốn xoá phòng thi này ra khỏi danh sách không?</p>
                                     <div className="mb-3">
                                         <label className="form-label">Chọn nguyên nhân xoá</label>
                                         <select className="form-select" value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)}>
                                             <option value="">-- Chọn nguyên nhân --</option>
-                                            <option value="Hủy ca">Hủy ca</option>
+                                            <option value="Hủy phòng">Hủy phòng</option>
                                             <option value="Lỗi dữ liệu">Lỗi dữ liệu</option>
                                             <option value="Nguyên nhân khác">Nguyên nhân khác</option>
                                         </select>

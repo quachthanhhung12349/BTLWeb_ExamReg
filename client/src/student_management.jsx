@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchStudents, deleteStudent } from './api/student_api.jsx'
+import { fetchStudents, deleteStudent, createStudent } from './api/student_api.jsx'
 import { useNavigate } from 'react-router-dom'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -29,6 +29,7 @@ const StudentManagement = () => {
     const [deleteReason, setDeleteReason] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
     const PAGE_SIZE = 10;
+    const [importing, setImporting] = useState(false);
 
     const openDelete = (student) => {
         setDeleteTarget(student);
@@ -51,6 +52,74 @@ const StudentManagement = () => {
         } catch (err) {
             alert('Error deleting student: ' + err.message);
         }
+    };
+
+    const parseCsv = (text) => {
+        const lines = (text || '').trim().split(/\r?\n/).filter(Boolean);
+        if (!lines.length) return [];
+        const headers = lines[0].split(',').map(h => h.trim());
+        return lines.slice(1).map(line => {
+            const cells = line.split(',');
+            const obj = {};
+            headers.forEach((h, idx) => {
+                obj[h] = (cells[idx] || '').trim();
+            });
+            return obj;
+        });
+    };
+
+    const handleImportCsv = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImporting(true);
+        try {
+            const text = await file.text();
+            const rows = parseCsv(text);
+            let success = 0;
+            for (const row of rows) {
+                try {
+                    await createStudent({
+                        studentId: row.studentId,
+                        name: row.name,
+                        birthDate: row.birthDate,
+                        class: row.class,
+                        email: row.email,
+                        account: {
+                            username: row.accountUsername,
+                            password: row.accountPassword
+                        }
+                    });
+                    success += 1;
+                } catch (err) {
+                    console.error('Failed to import row', row, err);
+                }
+            }
+            const data = await fetchStudents();
+            setStudents(data || []);
+            alert(`Đã import ${success} sinh viên.`);
+        } catch (err) {
+            alert(err.message || 'Lỗi import CSV');
+        } finally {
+            setImporting(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleExportCsv = () => {
+        const headers = ['studentId', 'name', 'birthDate', 'class', 'email', 'accountUsername', 'accountPassword'];
+        const rows = students.map(s => headers.map(h => {
+            if (h === 'accountUsername') return (s.account && s.account.username) || '';
+            if (h === 'accountPassword') return (s.account && s.account.password) || '';
+            return (s[h] || '');
+        }).join(','));
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'students.csv';
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     useEffect(() => {
@@ -105,7 +174,7 @@ const StudentManagement = () => {
                 <h1 className="h3 mb-3">Quản lý sinh viên</h1>
                 
                 {/* Search Bar and Button Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between'}}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap'}}>
                     {/* Search Bar */}
                     <div className="input-group" style={{ maxWidth: '900px' }}>
                         <input
@@ -120,15 +189,27 @@ const StudentManagement = () => {
                             🔍
                         </button>
                     </div>
-                    {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/student/add')}>
-                        + Thêm sinh viên
-                    </button>
+                    <div className="d-flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button className="btn btn-outline-secondary" onClick={() => document.getElementById('student-import-input').click()} disabled={importing}>
+                            📥 Import CSV
+                        </button>
+                        <input id="student-import-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+                        <button className="btn btn-outline-secondary" onClick={handleExportCsv}>
+                            📤 Export CSV
+                        </button>
+                        {/* Add Button */}
+                        <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/student/add')}>
+                            + Thêm sinh viên
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Content Section */}
             <div className="container-fluid p-4" style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
+                <div className="alert alert-info" style={{ fontSize: '0.9rem' }}>
+                    <strong>Định dạng CSV (sinh viên):</strong> header: <code>studentId,name,birthDate,class,email,accountUsername,accountPassword</code> (birthDate dạng YYYY-MM-DD).
+                </div>
                 <div className="card" style={{ boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)' }}>
                     <div className="card-body p-0">
                         <div style={{ overflowX: 'auto' }}>

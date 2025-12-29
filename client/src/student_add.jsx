@@ -10,6 +10,7 @@ const StudentAdd = () => {
   const [birthDate, setBirthDate] = useState('');
   const [class_, setClass] = useState('');
   const [email, setEmail] = useState('');
+  const [eligibleForExam, setEligibleForExam] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,8 @@ const StudentAdd = () => {
         name,
         birthDate,
         class: class_,
-        email
+        email,
+        eligibleForExam
       });
       navigate('/admin/student');
     } catch (err) {
@@ -77,6 +79,20 @@ const StudentAdd = () => {
               <div className="mb-3">
                 <label className="form-label">Email</label>
                 <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
+              </div>
+
+              <div className="form-check mb-3">
+                <input
+                  type="checkbox"
+                  id="eligibleForExam"
+                  className="form-check-input"
+                  checked={eligibleForExam}
+                  onChange={(e) => setEligibleForExam(e.target.checked)}
+                  disabled={loading}
+                />
+                <label htmlFor="eligibleForExam" className="form-check-label">
+                  Đủ điều kiện dự thi
+                </label>
               </div>
 
               <div className="d-flex justify-content-end">

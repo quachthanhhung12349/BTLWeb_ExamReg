@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchCourses, deleteCourse } from './api/course_api.jsx'
+import { fetchCourses, deleteCourse, createCourse } from './api/course_api.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -29,6 +29,7 @@ const CourseManagement = () => {
     const [deleteReason, setDeleteReason] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
     const PAGE_SIZE = 10;
+    const [importing, setImporting] = useState(false);
 
     const openDelete = (course) => {
         setDeleteTarget(course);
@@ -50,6 +51,49 @@ const CourseManagement = () => {
             closeDelete();
         } catch (err) {
             alert('Error deleting course: ' + (err.message || err));
+        }
+    };
+
+    const parseCsv = (text) => {
+        const lines = (text || '').trim().split(/\r?\n/).filter(Boolean);
+        if (!lines.length) return [];
+        const headers = lines[0].split(',').map(h => h.trim());
+        return lines.slice(1).map(line => {
+            const cells = line.split(',');
+            const obj = {};
+            headers.forEach((h, idx) => obj[h] = (cells[idx] || '').trim());
+            return obj;
+        });
+    };
+
+    const handleImportCsv = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImporting(true);
+        try {
+            const text = await file.text();
+            const rows = parseCsv(text);
+            let success = 0;
+            for (const row of rows) {
+                try {
+                    await createCourse({
+                        courseId: row.courseId,
+                        courseName: row.courseName,
+                        maxStudents: row.maxStudents ? Number(row.maxStudents) : undefined
+                    });
+                    success += 1;
+                } catch (err) {
+                    console.error('Failed to import course row', row, err);
+                }
+            }
+            const data = await fetchCourses();
+            setCourses(data || []);
+            alert(`Đã import ${success} học phần.`);
+        } catch (err) {
+            alert(err.message || 'Lỗi import CSV học phần');
+        } finally {
+            setImporting(false);
+            e.target.value = '';
         }
     };
 
@@ -97,7 +141,7 @@ const CourseManagement = () => {
                 <h1 className="h3 mb-3">Quản lý học phần</h1>
                 
                 {/* Search Bar and Button Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between'}}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap'}}>
                     {/* Search Bar */}
                     <div className="input-group" style={{ maxWidth: '900px' }}>
                         <input
@@ -112,15 +156,24 @@ const CourseManagement = () => {
                             🔍
                         </button>
                     </div>
-                    {/* Add Button */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/course/add')}>
-                        + Thêm học phần
-                    </button>
+                    <div className="d-flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button className="btn btn-outline-secondary" onClick={() => document.getElementById('course-import-input').click()} disabled={importing}>
+                            📥 Import CSV
+                        </button>
+                        <input id="course-import-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCsv} />
+                        {/* Add Button */}
+                        <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/admin/course/add')}>
+                            + Thêm học phần
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Content Section */}
             <div className="container-fluid p-4" style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
+                <div className="alert alert-info" style={{ fontSize: '0.9rem' }}>
+                    <strong>Định dạng CSV (học phần):</strong> header: <code>courseId,courseName,maxStudents</code>. maxStudents là số (tùy chọn).
+                </div>
                 <div className="card" style={{ boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)' }}>
                     <div className="card-body p-0">
                         <div style={{ overflowX: 'auto' }}>
@@ -130,6 +183,7 @@ const CourseManagement = () => {
                                         <th style={{ padding: '1rem' }}>Mã học phần</th>
                                         <th style={{ padding: '1rem' }}>Tên học phần</th>
                                         <th style={{ padding: '1rem' }}>Số tín chỉ</th>
+                                        <th style={{ padding: '1rem', textAlign: 'center' }}>Số lượng sinh viên</th>
                                         <th style={{ padding: '1rem', textAlign: 'center' }}>Hành động</th>
                                     </tr>
                                 </thead>
@@ -139,6 +193,7 @@ const CourseManagement = () => {
                                             <td style={{ padding: '1rem' }}>{s.courseId || '-'}</td>
                                             <td style={{ padding: '1rem' }}>{s.courseName || '-'}</td>
                                             <td style={{ padding: '1rem' }}>{s.credits || '-'}</td>
+                                            <td style={{ padding: '1rem', textAlign: 'center' }}>{s.currentEnrollment || 0}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                 <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate(`/admin/course/edit/${s._id}`)}>✎</button>
                                                 <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => openDelete(s)}>🗑</button>
@@ -147,7 +202,7 @@ const CourseManagement = () => {
                                     ))}
                                     {paginatedCourses.length === 0 && (
                                         <tr>
-                                            <td colSpan={4} className="text-center p-4 text-muted">Không có kết quả</td>
+                                            <td colSpan={5} className="text-center p-4 text-muted">Không có kết quả</td>
                                         </tr>
                                     )}
                                 </tbody>

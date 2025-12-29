@@ -24,7 +24,7 @@ const ExamRoomAdd = () => {
       await createExamRoom({ roomId, building, roomName, capacity: Number(capacity) });
       navigate('/admin/settings');
     } catch (err) {
-      setError(err.message || 'Lỗi khi thêm ca thi.');
+      setError(err.message || 'Lỗi khi thêm phòng thi.');
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ const ExamRoomAdd = () => {
   return (
     <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="bg-white border-bottom p-4" style={{ borderRadius: 0 }}>
-        <h1 className="h3 mb-3">Thêm ca thi</h1>
+        <h1 className="h3 mb-3">Thêm phòng thi</h1>
       </div>
 
       <div className="container-fluid p-4" style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
