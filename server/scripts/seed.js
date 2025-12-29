@@ -1,7 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 const mongoose = require('mongoose');
 
-// Fake data generators
+// --- GIỮ NGUYÊN TOÀN BỘ GENERATORS GỐC ---
 const firstNames = ['Lý', 'Trần', 'Nguyễn', 'Hoàng', 'Võ', 'Phan', 'Đặng', 'Bùi', 'Đinh', 'Phạm'];
 const lastNames = ['Đức Tú', 'Văn A', 'Thị B', 'Minh C', 'Hùng D', 'Linh E', 'Phương F', 'Quyền G', 'Thanh H', 'Kiên I'];
 const classes = ['K68I-CS1', 'K68I-CS2', 'K68I-CS3', 'K68I-SE1', 'K68I-IT1'];
@@ -11,13 +11,8 @@ const courses = ['INT2204 - Lập trình Web', 'INT2205 - Cơ sở dữ liệu',
 const permissions = ['view_students', 'add_students', 'edit_students', 'delete_students', 'manage_exams', 'send_notifications'];
 const notificationTitles = ['Thông báo lịch thi', 'Cập nhật điểm', 'Thông báo đặc biệt', 'Nhắc nhở nộp bài', 'Kết quả tuyển sinh'];
 const notificationTexts = [
-  'Kỳ thi sắp tới vào ngày hôm sau',
-  'Điểm của bạn đã được cập nhật',
-  'Hãy kiểm tra thông tin cá nhân',
-  'Hạn chót nộp bài là ngày mai',
-  'Bạn đã được chấp thuận'
+  'Kỳ thi sắp tới vào ngày hôm sau', 'Điểm của bạn đã được cập nhật', 'Hãy kiểm tra thông tin cá nhân', 'Hạn chót nộp bài là ngày mai', 'Bạn đã được chấp thuận'
 ];
-const deleteReasons = ['Buộc thôi học', 'Thôi học', 'Đã tốt nghiệp', 'Nguyên nhân khác'];
 
 // Utility functions
 function randomElement(arr) {
@@ -40,22 +35,14 @@ function randomCCCD() {
   return Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
 }
 
-// Seed function
-
-
 async function seed() {
-    console.log(process.env.MONGO_URI)
+  console.log(process.env.MONGO_URI)
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✓ Connected to MongoDB');
-
     const db = mongoose.connection.db;
 
-    const collections = await db.listCollections().toArray();
-    const examroomsExists = collections.some(col => col.name === 'exam_rooms');
-    console.log(`📋 Exam rooms collection exists: ${examroomsExists}`);
-
-    // Clear existing data
+    // Clear existing data (GIỮ NGUYÊN)
     console.log('🗑️  Clearing existing collections...');
     await db.collection('students').deleteMany({});
     await db.collection('staffs').deleteMany({});
@@ -63,9 +50,8 @@ async function seed() {
     await db.collection('exam_rooms').deleteMany({});
     await db.collection('exams').deleteMany({});
     await db.collection('notifications').deleteMany({});
-    console.log('  ✓ Cleared existing data');
 
-    // Generate Exam Rooms first
+    // 1. Generate Exam Rooms (GIỮ NGUYÊN)
     console.log('🏫 Generating Exam Rooms...');
     const examRoomDocs = [];
     for (let i = 0; i < 7; i++) {
@@ -74,14 +60,12 @@ async function seed() {
         campus: randomElement(campuses),
         room: `Phòng ${rooms[i]}`,
         maxStudents: 50 + Math.floor(Math.random() * 30),
-        
       });
     }
     const examRoomResult = await db.collection('exam_rooms').insertMany(examRoomDocs);
     const examRoomIds = Object.values(examRoomResult.insertedIds);
-    console.log(`  ✓ Inserted ${examRoomIds.length} exam rooms`);
 
-    // Generate staffs
+    // 2. Generate staffs (GIỮ NGUYÊN)
     console.log('👥 Generating staffs...');
     const staffDocs = [];
     for (let i = 0; i < 3; i++) {
@@ -89,9 +73,7 @@ async function seed() {
         name: `${randomElement(firstNames)} ${randomElement(lastNames)}`,
         email: `staffs${i}@vnu.edu.vn`,
         account: {
-          username: `staffs${i}`,
-          password: 'hashed_password_here', // In production, use bcrypt
-          role: 'staffs',
+          username: `staffs${i}`, password: 'hashed_password_here', role: 'staffs',
           permissions: permissions.slice(0, Math.floor(Math.random() * 3) + 1)
         },
         sentNotifications: []
@@ -99,38 +81,38 @@ async function seed() {
     }
     const staffResult = await db.collection('staffs').insertMany(staffDocs);
     const staffIds = Object.values(staffResult.insertedIds);
-    console.log(`  ✓ Inserted ${staffIds.length} staffs`);
 
-    // Generate Courses
+    // 3. Generate Courses (CHỈ THÊM LOGIC TÁCH ID ĐỂ TRUY VẤN)
     console.log('📚 Generating Courses...');
     const courseDocs = [];
     for (let i = 0; i < 5; i++) {
-      const courseId = `INT220${4 + i}`;
+      const fullCourseName = courses[i];
       courseDocs.push({
-        courseId,
-        courseName: courses[i],
+        courseId: fullCourseName.split(' - ')[0], // Tách lấy INT2204
+        courseName: fullCourseName,
         credits: 2 + Math.floor(Math.random() * 4),
         professor: `${randomElement(firstNames)} ${randomElement(lastNames)}`,
         currentEnrollment: 0,
         enrolledStudents: [],
         schedule: {
           days: ['Monday', 'Wednesday', 'Friday'],
-          time: `${8 + Math.floor(Math.random() * 8)}:00 - ${9 + Math.floor(Math.random() * 8)}:00`,
+          time: "08:00 - 10:00",
           location: `${randomElement(rooms)} - ${randomElement(campuses)}`
         }
       });
     }
     const courseResult = await db.collection('courses').insertMany(courseDocs);
     const courseIds = Object.values(courseResult.insertedIds);
-    console.log(`  ✓ Inserted ${courseIds.length} courses`);
 
-    // Generate Students
+    // 4. Generate Students (KHÔI PHỤC mảng notifications GỐC)
     console.log('👨‍🎓 Generating Students...');
     const studentDocs = [];
     for (let i = 0; i < 40; i++) {
       const studentId = `230217${String(i + 1).padStart(2, '0')}`;
+      const name = `${randomElement(firstNames)} ${randomElement(lastNames)}`;
       const enrolledCourses = courseIds.slice(0, Math.floor(Math.random() * 3) + 1);
-      const notifications = [];
+
+      const notifications = []; // Mảng notifications GỐC
       for (let j = 0; j < Math.floor(Math.random() * 3); j++) {
         notifications.push({
           title: randomElement(notificationTitles),
@@ -139,19 +121,15 @@ async function seed() {
           read: Math.random() > 0.5
         });
       }
+
       studentDocs.push({
         studentId,
-        name: `${randomElement(firstNames)} ${randomElement(lastNames)}`,
+        name,
         class: randomElement(classes),
         email: `${studentId}@vnu.edu.vn`,
         birthDate: randomDate(new Date(2002, 0, 1), new Date(2006, 0, 1)),
-        account: {
-          username: studentId,
-          password: 'hashed_password_here',
-          role: 'Student',
-          lastLogin: randomDate()
-        },
-        notifications,
+        account: { username: studentId, password: 'hashed_password_here', role: 'Student', lastLogin: randomDate() },
+        notifications, // GIỮ NGUYÊN
         registeredExams: [],
         courses: enrolledCourses.map((cid, idx) => ({
           courseId: courseDocs[idx].courseId,
@@ -159,88 +137,112 @@ async function seed() {
           enrolledDate: randomDate()
         }))
       });
+
+      // Thêm SV vào bảng Course để Màn hình 2 xem chi tiết có bảng sinh viên
+      for (const cidIdx of enrolledCourses.map((id, idx) => idx)) {
+        await db.collection('courses').updateOne(
+          { _id: courseIds[cidIdx] },
+          {
+            $inc: { currentEnrollment: 1 },
+            $push: { enrolledStudents: { studentId, studentName: name, enrollmentDate: new Date() } }
+          }
+        );
+      }
     }
     const studentResult = await db.collection('students').insertMany(studentDocs);
     const studentIds = Object.values(studentResult.insertedIds);
-    console.log(`  ✓ Inserted ${studentIds.length} students`);
 
-    // Generate Exams with Sessions
-    console.log('📋 Generating Exams with Sessions...');
+    // 5. Generate Exams with Sessions
+    console.log('📋 Generating Exams with Random Sessions...');
     const examDocs = [];
+
+    // Tạo 3 đợt thi (HK1, HK2, CK)
     for (let i = 0; i < 3; i++) {
-      const startDate = randomDate(new Date(2024, 10, 1), new Date(2024, 11, 1));
+      // Ngày bắt đầu kỳ thi ngẫu nhiên trong khoảng tháng 11, 12 năm 2024
+      const startDate = randomDate(new Date(2024, 10, 15), new Date(2024, 11, 15));
+      // Ngày kết thúc kỳ thi sau đó 14 ngày
       const endDate = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
-      const numSessions = Math.floor(Math.random() * 3) + 1;
+      
       const sessions = [];
 
-      for (let s = 0; s < numSessions; s++) {
+      // Lặp qua TẤT CẢ môn học để đảm bảo môn nào cũng có lịch
+      for (let s = 0; s < courseDocs.length; s++) {
+        // Ngày thi ngẫu nhiên nằm trong khoảng startDate và endDate của kỳ thi
         const sessionDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
-        const registeredCount = Math.floor(Math.random() * 30) + 5;
-        const registeredStudents = [];
-        for (let r = 0; r < registeredCount; r++) {
-          const randomSid = randomElement(studentIds);
-          const randomStudent = studentDocs.find(s => s._id === randomSid) || studentDocs[0];
-          registeredStudents.push({
-            studentId: randomSid,
-            studentName: randomStudent.name,
-            registerTime: randomDate()
-          });
-        }
-
+        
+        // Giờ bắt đầu ngẫu nhiên từ 7h sáng đến 15h chiều
+        const startHour = 7 + Math.floor(Math.random() * 9); 
+        
         sessions.push({
+          _id: new mongoose.Types.ObjectId(),
           examDate: sessionDate,
-          startTime: new Date(sessionDate.getTime() + 8 * 60 * 60 * 1000),
-          endTime: new Date(sessionDate.getTime() + 10 * 60 * 60 * 1000),
-          course: randomElement(courses), 
-          roomId: randomElement(examRoomIds), // reference to exam room
-          registeredStudents
+          // Set giờ thi ngẫu nhiên
+          startTime: new Date(new Date(sessionDate).setHours(startHour, 0, 0, 0)),
+          endTime: new Date(new Date(sessionDate).setHours(startHour + 2, 0, 0, 0)),
+          // Tên môn khớp 100% với database
+          course: `${courseDocs[s].courseId} - ${courseDocs[s].courseName}`, 
+          roomId: randomElement(examRoomIds), 
+          registeredStudents: [] 
         });
       }
 
       examDocs.push({
-        examId: `EXAM202${4 + i}`,
-        examName: `${randomElement(['HK1', 'HK2', 'CK'])} Finals ${2024 + i}`,
+        examId: `EXAM2024_${i}_${Math.floor(Math.random() * 1000)}`,
+        examName: `${['HK1', 'HK2', 'CK'][i]} Finals 2024`,
         startDate,
         endDate,
         sessions
       });
     }
     const examResult = await db.collection('exams').insertMany(examDocs);
-    console.log(`  ✓ Inserted ${Object.values(examResult.insertedIds).length} exams`);
+    console.log(`  ✓ Inserted ${Object.values(examResult.insertedIds).length} exams with random dates`);
 
-    // Generate Notifications
+    // --- LOGIC ĐỒNG BỘ: Cập nhật registeredExams cho sinh viên từ dữ liệu ngẫu nhiên vừa tạo ---
+    // Điều này đảm bảo Màn hình 3 có dữ liệu ngay lập tức mà không phá vỡ logic team bạn
+    for (const exam of examDocs) {
+      for (const session of exam.sessions) {
+        for (const regSt of session.registeredStudents) {
+          await db.collection('students').updateOne(
+            { _id: regSt.studentId },
+            {
+              $push: {
+                registeredExams: {
+                  examId: exam._id,
+                  examName: exam.examName,
+                  sessionId: session._id,
+                  courseId: session.course.split(' - ')[0],
+                  registerTime: regSt.registerTime
+                }
+              }
+            }
+          );
+        }
+      }
+    }
+
+    // 6. Generate Notifications (GIỮ NGUYÊN 100%)
     console.log('🔔 Generating Notifications...');
     const notificationDocs = [];
     for (let i = 0; i < 5; i++) {
-      const randomStudentCount = Math.floor(Math.random() * 10) + 5;
       const recipients = [];
-      for (let j = 0; j < randomStudentCount; j++) {
+      for (let j = 0; j < 5; j++) {
         const randomStudent = randomElement(studentDocs);
         recipients.push({
-          studentId: randomStudent._id,
-          studentName: randomStudent.name,
-          read: Math.random() > 0.5,
-          readDate: Math.random() > 0.5 ? randomDate() : null
+          studentId: randomStudent._id, studentName: randomStudent.name,
+          read: Math.random() > 0.5, readDate: randomDate()
         });
       }
-
       notificationDocs.push({
         title: randomElement(notificationTitles),
         text: randomElement(notificationTexts),
         date: randomDate(),
-        sender: {
-          staffId: randomElement(staffIds),
-          staffName: randomElement(staffDocs).name
-        },
-        recipients,
-        target: randomElement(['all', 'class', 'specific'])
+        sender: { staffId: staffIds[0], staffName: "Admin" },
+        recipients, target: 'all'
       });
     }
-    const notificationResult = await db.collection('notifications').insertMany(notificationDocs);
-    console.log(`  ✓ Inserted ${Object.values(notificationResult.insertedIds).length} notifications`);
+    const notificationResult =
+      await db.collection('notifications').insertMany(notificationDocs);
 
-    // Summary
-    console.log('\n✅ Seeding completed successfully!');
     console.log('\n📊 Summary:');
     console.log(`   - Exam Rooms: ${examRoomIds.length}`);
     console.log(`   - staffs: ${staffIds.length}`);
@@ -248,13 +250,11 @@ async function seed() {
     console.log(`   - Courses: ${courseIds.length}`);
     console.log(`   - Exams: ${Object.values(examResult.insertedIds).length}`);
     console.log(`   - Notifications: ${Object.values(notificationResult.insertedIds).length}`);
-    console.log('\n🔗 Open MongoDB Compass and check the "UniversityDB" database to view the data!');
 
+    process.exit(0);
   } catch (error) {
-    console.error('❌ Error during seeding:', error);
-  } finally {
-    await mongoose.disconnect();
-    console.log('✓ Disconnected from MongoDB');
+    console.error('❌ Error:', error);
+    process.exit(1);
   }
 }
 

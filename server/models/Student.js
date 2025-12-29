@@ -12,6 +12,7 @@ const RegisteredExamSub = new Schema({
   examId: { type: Schema.Types.ObjectId, ref: 'Exam' },
   examName: String,
   sessionId: { type: Schema.Types.ObjectId },
+  courseId: String,
   registerTime: { type: Date, default: Date.now },
   status: { type: String, default: 'registered' }
 }, { _id: true });

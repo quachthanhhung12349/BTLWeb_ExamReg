@@ -7,6 +7,9 @@ const cors = require('cors');
 const studentsRouter = require('./routes/students');
 const courseRouter = require('./routes/courses');
 const examRoomsRouter = require('./routes/examRooms');
+const registrationRouter = require('./routes/registration'); 
+const studentCoursesRouter = require('./routes/studentCourses');
+const examSlipRouter = require('./routes/examSlips');
 
 const app = express();
 
@@ -49,6 +52,9 @@ app.post('/api/login', (req, res) => {
 app.use('/api/students', studentsRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/exam-rooms', examRoomsRouter);
+app.use('/api/registration', registrationRouter);
+app.use('/api/student-courses', studentCoursesRouter);
+app.use('/api/exam-slips', examSlipRouter);
 
 
 const PORT = process.env.PORT || 5000;
