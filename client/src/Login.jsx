@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import UETLogo from "./assets/logo.png"; 
+import UETLogo from "./assets/logo.png";
 
 export default function Login({ onLoginSuccess }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Đang gửi dữ liệu:", username, password); 
+        setError('');
 
         try {
-            const response = await fetch('http://localhost:5000/api/login', {
+            const response = await fetch('http://localhost:5001/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -22,18 +23,23 @@ export default function Login({ onLoginSuccess }) {
 
             const data = await response.json();
 
-            if (response.ok) {
-                alert('Đăng nhập thành công!');
-                if (onLoginSuccess) {
-                    onLoginSuccess(data.token);
+            if (data.success) {
+                onLoginSuccess(data.user.role);
+
+                if (data.user.role === 'admin') {
+                    navigate('/admin');
+                } else if (data.user.role === 'student') {
+                    navigate('/student');
+                } else {
+                    navigate('/');
                 }
-                navigate('/admin');
+
             } else {
-                alert('Lỗi: ' + (data.message || "Sai thông tin đăng nhập"));
+                setError(data.message || 'Đăng nhập thất bại');
             }
-        } catch (error) {
-            console.error("Lỗi kết nối:", error);
-            alert('Không thể kết nối tới Server (Backend chưa chạy?)');
+        } catch (err) {
+            console.error(err);
+            setError('Lỗi kết nối đến server');
         }
     };
 
@@ -49,7 +55,7 @@ export default function Login({ onLoginSuccess }) {
 
             <div
                 className="d-flex justify-content-center align-items-center bg-white"
-                style={{ width: "100%" }} 
+                style={{ width: "100%" }}
             >
                 <div style={{ width: "400px", textAlign: "center", padding: "20px" }}>
                     <img

@@ -1,50 +1,69 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import LayoutAdmin from './layout_admin.jsx';
-import SidebarAdmin from './sidebar_admin.jsx';
-import StudentManagement from './student_management.jsx';
 import Login from './Login.jsx';
 import DashboardAdmin from './dashboard_admin.jsx';
 import CourseManagement from './course_management.jsx';
+import StudentManagement from './student_management.jsx';
+import RegConditionManagement from './reg_condition_management.jsx';
 import ExamManagement from './exam_management.jsx';
 import ExamRoomManagement from './exam_room_management.jsx';
 import StudentAdd from './student_add.jsx';
 import StudentEdit from './student_edit.jsx';
 import CourseAdd from './course_add.jsx';
 import CourseEdit from './course_edit.jsx';
+import ExamDetail from './exam_detail.jsx';
 import ExamRoomAdd from './exam_room_add.jsx';
 import ExamRoomEdit from './exam_room_edit.jsx';
+import StudentExamRegistrationPage from './student_exam_registration.jsx';
 
 import './App.css'
 
 function App() {
-  const currentPage = 'StudentManagement';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
-  const handleLoginSuccess = () => {
+  useEffect(() => {
+    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const role = localStorage.getItem('userRole');
+    if (loggedIn && role) {
+      setIsLoggedIn(true);
+      setUserRole(role);
+    }
+  }, []);
+
+  const handleLoginSuccess = (role) => {
     localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userRole', role);
     setIsLoggedIn(true);
+    setUserRole(role);
   };
 
-  //const authed = isLoggedIn || localStorage.getItem('isLoggedIn') === 'true';
+  // Hàm xử lý đăng xuất chung cho cả Admin và Student
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    setIsLoggedIn(false);
+    setUserRole(null);
+    window.location.href = '/login';
+  };
 
-const authed = true; //For debugging purposes only, remove later
+   const authed = isLoggedIn; 
+  const currentRole = userRole;
 
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-        {/* keep a default admin route and add specific admin subroutes so sidebar links work */}
+        
+        {/* --- ROUTES ADMIN --- */}
         <Route
           path="/admin"
           element={
-            authed ? (
-              <LayoutAdmin activeLink={currentPage}>
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="StudentManagement">
                 <StudentManagement />
               </LayoutAdmin>
             ) : (
@@ -56,7 +75,7 @@ const authed = true; //For debugging purposes only, remove later
         <Route
           path="/admin/dashboard"
           element={
-            authed ? (
+            authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="Dashboard">
                 <DashboardAdmin />
               </LayoutAdmin>
@@ -69,7 +88,7 @@ const authed = true; //For debugging purposes only, remove later
         <Route
           path="/admin/student"
           element={
-            authed ? (
+            authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="StudentManagement">
                 <StudentManagement />
               </LayoutAdmin>
@@ -108,7 +127,7 @@ const authed = true; //For debugging purposes only, remove later
         <Route
           path="/admin/course"
           element={
-            authed ? (
+            authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="CourseManagement">
                 <CourseManagement />
               </LayoutAdmin>
@@ -134,7 +153,7 @@ const authed = true; //For debugging purposes only, remove later
         <Route
           path="/admin/course/edit/:id"
           element={
-            authed ? (
+            authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="CourseManagement">
                 <CourseEdit />
               </LayoutAdmin>
@@ -147,7 +166,7 @@ const authed = true; //For debugging purposes only, remove later
         <Route
           path="/admin/reports"
           element={
-            authed ? (
+            authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="Reports">
                 <ExamManagement />
               </LayoutAdmin>
@@ -158,10 +177,23 @@ const authed = true; //For debugging purposes only, remove later
         />
 
         <Route
-          path="/admin/settings"
+          path="/admin/exam/:id" // :id là tham số động
           element={
-            authed ? (
-              <LayoutAdmin activeLink="Settings">
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="Reports">
+                <ExamDetail />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam-rooms"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
                 <ExamRoomManagement />
               </LayoutAdmin>
             ) : (
@@ -169,11 +201,12 @@ const authed = true; //For debugging purposes only, remove later
             )
           }
         />
+
         <Route
-          path="/admin/settings/add"
+          path="/admin/exam-rooms/add"
           element={
-            authed ? (
-              <LayoutAdmin activeLink="Settings">
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
                 <ExamRoomAdd />
               </LayoutAdmin>
             ) : (
@@ -183,10 +216,10 @@ const authed = true; //For debugging purposes only, remove later
         />
 
         <Route
-          path="/admin/settings/edit/:id"
+          path="/admin/exam-rooms/edit/:id"
           element={
-            authed ? (
-              <LayoutAdmin activeLink="Settings">
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="ExamRoomManagement">
                 <ExamRoomEdit />
               </LayoutAdmin>
             ) : (
@@ -194,10 +227,44 @@ const authed = true; //For debugging purposes only, remove later
             )
           }
         />
-        <Route path="/" element={<Navigate to={authed ? '/admin' : '/login'} replace />} />
+
+        <Route
+          path="/admin/reg-conditions"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="RegConditionManagement">
+                <RegConditionManagement />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* --- ROUTE STUDENT --- */}
+        <Route 
+          path="/student" 
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentExamRegistrationPage onLogout={handleLogout} /> 
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+
+        <Route 
+          path="/" 
+          element={
+            !authed ? <Navigate to="/login" replace /> :
+            currentRole === 'admin' ? <Navigate to="/admin" replace /> :
+            currentRole === 'student' ? <Navigate to="/student" replace /> :
+            <Navigate to="/login" replace />
+          } 
+        />
       </Routes>
     </Router>
   );
 };
 
-export default App
+export default App;

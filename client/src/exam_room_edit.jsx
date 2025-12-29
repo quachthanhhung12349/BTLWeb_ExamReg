@@ -19,14 +19,14 @@ const ExamRoomEdit = () => {
       try {
         const r = await fetchExamRoom(id);
         if (mounted) {
-          if (!r) return navigate('/admin/settings');
+          if (!r) return navigate('/admin/exam-rooms');
           setRoomId(r.roomId || '');
           setBuilding(r.campus || '');
           setRoomName(r.room || '');
           setCapacity(r.maxStudents || '');
         }
       } catch (err) {
-        navigate('/admin/settings');
+        navigate('/admin/exam-rooms');
       }
     })();
     return () => (mounted = false);
@@ -42,7 +42,7 @@ const ExamRoomEdit = () => {
     setLoading(true);
     try {
       await updateExamRoom(id, { roomId, building, roomName, capacity: Number(capacity) });
-      navigate('/admin/settings');
+      navigate('/admin/exam-rooms');
     } catch (err) {
       setError(err.message || 'Lỗi khi cập nhật ca thi.');
     } finally {
@@ -51,7 +51,7 @@ const ExamRoomEdit = () => {
   };
 
   const handleCancel = () => {
-    navigate('/admin/settings');
+    navigate('/admin/exam-rooms');
   };
 
   return (

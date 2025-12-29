@@ -118,7 +118,7 @@ const ExamRoomManagement = () => {
     };
 
     const handleEdit = (room) => {
-        navigate(`/admin/settings/edit/${room._id}`);
+        navigate(`/admin/exam-rooms/edit/${room._id}`);
     };
 
     // Derived lists for search + pagination
