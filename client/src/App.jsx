@@ -18,6 +18,9 @@ import ExamDetail from './exam_detail.jsx';
 import ExamRoomAdd from './exam_room_add.jsx';
 import ExamRoomEdit from './exam_room_edit.jsx';
 import StudentExamRegistrationPage from './student_exam_registration.jsx';
+import StudentCoursesPage from './student_courses.jsx';
+import StudentExamSlipPage from './student_exam_slip.jsx';
+import NotificationDetail from './notification.jsx';
 
 import './App.css'
 
@@ -41,7 +44,6 @@ function App() {
     setUserRole(role);
   };
 
-  // Hàm xử lý đăng xuất chung cho cả Admin và Student
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userRole');
@@ -50,14 +52,14 @@ function App() {
     window.location.href = '/login';
   };
 
-   const authed = isLoggedIn; 
+  const authed = isLoggedIn;
   const currentRole = userRole;
 
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-        
+
         {/* --- ROUTES ADMIN --- */}
         <Route
           path="/admin"
@@ -242,25 +244,63 @@ function App() {
         />
 
         {/* --- ROUTE STUDENT --- */}
-        <Route 
-          path="/student" 
+        <Route
+          path="/student"
           element={
             authed && currentRole === 'student' ? (
-              <StudentExamRegistrationPage onLogout={handleLogout} /> 
+              <Navigate to="/student/registration" replace />
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
 
-        <Route 
-          path="/" 
+        <Route
+          path="/student/registration"
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentExamRegistrationPage onLogout={handleLogout} activeTab="registration" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/student/courses"
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentCoursesPage onLogout={handleLogout} activeTab="my-courses" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/student/exam-slip"
+          element={
+            authed && currentRole === 'student' ? (
+              <StudentExamSlipPage onLogout={handleLogout} activeTab="exam-slip" />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/student/notification/:id"
+          element={authed ? <NotificationDetail /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/"
           element={
             !authed ? <Navigate to="/login" replace /> :
-            currentRole === 'admin' ? <Navigate to="/admin" replace /> :
-            currentRole === 'student' ? <Navigate to="/student" replace /> :
-            <Navigate to="/login" replace />
-          } 
+              currentRole === 'admin' ? <Navigate to="/admin/dashboard" replace /> :
+                currentRole === 'student' ? <Navigate to="/student/registration" replace /> :
+                  <Navigate to="/login" replace />
+          }
         />
       </Routes>
     </Router>

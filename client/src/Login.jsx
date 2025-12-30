@@ -24,6 +24,9 @@ export default function Login({ onLoginSuccess }) {
             const data = await response.json();
 
             if (data.success) {
+                localStorage.setItem("studentId", data.user.studentId);
+
+
                 onLoginSuccess(data.user.role);
 
                 if (data.user.role === 'admin') {

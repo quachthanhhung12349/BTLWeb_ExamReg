@@ -3,64 +3,96 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-const authRouter = require('./routes/auth');
+// --- IMPORT ROUTERS ---
+// Nhóm Adminconst authRouter = require('./routes/auth');
 const studentsRouter = require('./routes/students');
 const courseRouter = require('./routes/courses');
 const examsRouter = require('./routes/exams');
 const examRoomsRouter = require('./routes/examRooms');
+const notificationRouter = require('./routes/notifications'); 
+const Student = require('./models/Student');
+
+const examRegistrationRouter = require('./routes/examRegistrations'); 
+const examSessionRouter = require('./routes/examSessions');
 const courseStudentsRouter = require('./routes/courseStudents');
 
 const app = express();
 
-// Middleware
+// --- MIDDLEWARE ---
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/login', (req, res) => {
+// --- AUTHENTICATION ---
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
-    console.log("Dữ liệu đăng nhập nhận được:", username, password);
+    try {
+        // Kiểm tra tài khoản Dummy
+        if (username === 'admin' && password === '123456') {
+            return res.status(200).json({ 
+                success: true, 
+                user: { name: 'Admin Test', role: 'admin', studentId: 'admin' }
+            });
+        }
 
-    // 1. Check Admin
-    if (username === 'admin' && password === '123456') {
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Đăng nhập Admin thành công!',
-            token: 'admin-token-fake', 
-            user: { name: 'Admin User', role: 'admin' }
+        // Kiểm tra tài khoản Dummy
+        if (username === 'student' && password === '123456') {
+            return res.status(200).json({ 
+                success: true, 
+                user: { name: 'Nguyen Van A', role: 'student', studentId: '23021701' }
+            });
+        }
+
+        // Kiểm tra tài khoản THỰC
+        const student = await Student.findOne({ 
+            "account.username": username, 
+            "account.password": password 
         });
-    } 
-    // 2. Check Sinh viên
-    else if (username === 'student' && password === '123456') {
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Đăng nhập Sinh viên thành công!',
-            token: 'student-token-fake', 
-            user: { name: 'Nguyen Van A', role: 'student' }
-        });
-    }
-    // 3. Sai thông tin
-    else {
+
+        if (student) {
+            return res.status(200).json({ 
+                success: true, 
+                user: { 
+                    name: student.name, 
+                    role: 'student', 
+                    studentId: student.studentId 
+                }
+            });
+        }
+
         return res.status(401).json({ 
             success: false, 
             message: 'Tên đăng nhập hoặc mật khẩu không đúng!' 
         });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi server' });
     }
 });
 
 app.use('/api/auth', authRouter);
-app.use('/api/students', studentsRouter);
-app.use('/api/courses', courseRouter);
+app.use('/api/exam-registrations', examRegistrationRouter);
+app.use('/api/exam-sessions', examSessionRouter);
+app.use('/api/notifications', notificationRouter);
+
+app.use('/api/admin/students', studentsRouter);
+app.use('/api/admin/courses', courseRouter);
 app.use('/api/exams', examsRouter);
-app.use('/api/exam-rooms', examRoomsRouter);
+app.use('/api/admin/exam-rooms', examRoomsRouter);
 app.use('/api/course-students', courseStudentsRouter);
 
 
-const PORT = process.env.PORT || 5001;
-mongoose.connect(process.env.MONGO_URI).then(()=> {
-  console.log('MongoDB connected');
-  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-})
-.catch(err => {
-console.error('MongoDB connection error:', err);
-});
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+
+mongoose.connect(MONGO_URI)
+    .then(() => {
+        console.log('✅ Kết nối MongoDB thành công');
+        app.listen(PORT, () => {
+            console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
+        });
+    })
+    .catch(err => {
+        console.error('❌ Lỗi kết nối MongoDB:', err.message);
+    });
