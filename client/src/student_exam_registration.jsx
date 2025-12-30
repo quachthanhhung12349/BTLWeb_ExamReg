@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
+import { getApiBase } from "./api/base";
 
 const RegistrationPage = ({ onLogout }) => {
   const [search, setSearch] = useState("");
@@ -9,8 +10,10 @@ const RegistrationPage = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
 
   const studentId = localStorage.getItem("studentId");
-  
-  const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
+
+  const examRegUrl = async (suffix = "") => {
+    return `${await getApiBase()}/api/exam-registrations${suffix}`;
+  };
 
   const fetchSubjects = async () => {
     // Kiểm tra nếu không có studentId thì không gọi API
@@ -21,7 +24,7 @@ const RegistrationPage = ({ onLogout }) => {
 
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/status/${studentId}`);
+      const response = await axios.get(await examRegUrl(`/status/${studentId}`));
       setSubjects(response.data);
       setLoading(false);
     } catch (error) {
@@ -38,7 +41,7 @@ const RegistrationPage = ({ onLogout }) => {
   // Xử lý Đăng ký
   const handleRegister = async (courseId) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}`, {
+      const response = await axios.post(await examRegUrl(), {
         studentId, 
         courseId,
         action: 'register'
@@ -57,7 +60,7 @@ const RegistrationPage = ({ onLogout }) => {
   const handleUnregister = async (courseId) => {
     if (window.confirm("Bạn có chắc chắn muốn hủy đăng ký môn này?")) {
       try {
-        const response = await axios.post(`${API_BASE_URL}`, {
+        const response = await axios.post(await examRegUrl(), {
           studentId,
           courseId,
           action: 'unregister'

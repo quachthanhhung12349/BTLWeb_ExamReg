@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom"; 
 import logo from "./assets/logo.png";
+import { getApiBase } from "./api/base";
 
 const Sidebar = ({ onLogout }) => {
     const location = useLocation();
@@ -19,7 +20,7 @@ const Sidebar = ({ onLogout }) => {
             const sId = localStorage.getItem("studentId");
             if (!sId || sId === 'admin') return;
             try {
-                const response = await fetch(`http://localhost:5000/api/exam-registrations/${sId}/view-slips`);
+                const response = await fetch(`${await getApiBase()}/api/exam-registrations/${sId}/view-slips`);
                 const data = await response.json();
                 if (response.ok && data.studentInfo) {
                     setStudentInfo({ name: data.studentInfo.name, role: "Sinh viên" });
@@ -38,7 +39,7 @@ const Sidebar = ({ onLogout }) => {
         }
         const sId = localStorage.getItem("studentId");
         try {
-            const response = await fetch(`http://localhost:5000/api/exam-registrations/users/${sId}/password`, {
+            const response = await fetch(`${await getApiBase()}/api/exam-registrations/users/${sId}/password`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

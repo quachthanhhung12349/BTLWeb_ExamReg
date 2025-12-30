@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
+import { getApiBase } from "./api/base";
 
 const CourseListPage = ({ onLogout }) => {
   const [courses, setCourses] = useState([]);
@@ -13,13 +14,16 @@ const CourseListPage = ({ onLogout }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   const pdfExportRef = useRef(null);
-  const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
+  
+  const examRegUrl = async (suffix = "") => {
+    return `${await getApiBase()}/api/exam-registrations${suffix}`;
+  };
 
   useEffect(() => {
     const fetchGridData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/all-courses`);
+        const response = await axios.get(await examRegUrl('/all-courses'));
         setCourses(response.data);
         setLoading(false);
       } catch (error) {
@@ -31,7 +35,7 @@ const CourseListPage = ({ onLogout }) => {
 
   const handleShowDetails = async (courseId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/details/${courseId}`);
+      const response = await axios.get(await examRegUrl(`/details/${courseId}`));
       setSelectedCourse(response.data);
       setShowModal(true);
     } catch (error) {
@@ -41,7 +45,7 @@ const CourseListPage = ({ onLogout }) => {
 
   const handleDownloadPDF = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/subjects`);
+      const res = await axios.get(await examRegUrl('/subjects'));
       setReportData(res.data); 
 
       setTimeout(async () => {

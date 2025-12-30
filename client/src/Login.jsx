@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import UETLogo from "./assets/logo.png";
+import { getApiBase } from "./api/base";
 
 export default function Login({ onLoginSuccess }) {
     const [username, setUsername] = useState("");
@@ -13,7 +14,7 @@ export default function Login({ onLoginSuccess }) {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:5001/api/login', {
+            const response = await fetch(`${await getApiBase()}/api/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -25,7 +26,8 @@ export default function Login({ onLoginSuccess }) {
 
             if (data.success) {
                 localStorage.setItem("studentId", data.user.studentId);
-
+                localStorage.setItem("userName", data.user.name);
+                localStorage.setItem("studentName", data.user.name);
 
                 onLoginSuccess(data.user.role);
 

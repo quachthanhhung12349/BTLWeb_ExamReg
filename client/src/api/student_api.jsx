@@ -1,8 +1,13 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5001';
+import { getApiBase } from './base';
+
+async function studentPath(id = '') {
+  const base = await getApiBase();
+  return `${base}/api/admin/students${id}`;
+}
 
 export async function fetchStudents() {
   try {
-    const res = await fetch(`${API_BASE}/api/students`);
+    const res = await fetch(await studentPath());
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -14,7 +19,7 @@ export async function fetchStudents() {
 // GET one student by ID
 export async function fetchStudent(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/students/${id}`);
+    const res = await fetch(await studentPath(`/${id}`));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -26,7 +31,7 @@ export async function fetchStudent(id) {
 // CREATE a new student
 export async function createStudent(data) {
   try {
-    const res = await fetch(`${API_BASE}/api/students`, {
+    const res = await fetch(await studentPath(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -45,7 +50,7 @@ export async function createStudent(data) {
 // UPDATE a student
 export async function updateStudent(id, data) {
   try {
-    const res = await fetch(`${API_BASE}/api/students/${id}`, {
+    const res = await fetch(await studentPath(`/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -64,7 +69,7 @@ export async function updateStudent(id, data) {
 // DELETE a student
 export async function deleteStudent(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/students/${id}`, {
+    const res = await fetch(await studentPath(`/${id}`), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });

@@ -1,8 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5001';
+import { getApiBase } from './base';
+
+async function coursesPath(path = '') {
+  return `${await getApiBase()}/api/admin/courses${path}`;
+}
 
 export async function fetchCourses() {
   try {
-    const res = await fetch(`${API_BASE}/api/courses`);
+    const res = await fetch(await coursesPath());
     if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch courses');
     return await res.json();
   } catch (err) {
@@ -13,7 +17,7 @@ export async function fetchCourses() {
 
 export async function fetchCourse(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${id}`);
+    const res = await fetch(await coursesPath(`/${id}`));
     if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch course');
     return await res.json();
   } catch (err) {
@@ -24,7 +28,7 @@ export async function fetchCourse(id) {
 
 export async function createCourse(data) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses`, {
+    const res = await fetch(await coursesPath(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -39,7 +43,7 @@ export async function createCourse(data) {
 
 export async function updateCourse(id, data) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${id}`, {
+    const res = await fetch(await coursesPath(`/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -54,7 +58,7 @@ export async function updateCourse(id, data) {
 
 export async function deleteCourse(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${id}`, { method: 'DELETE' });
+    const res = await fetch(await coursesPath(`/${id}`), { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete course');
     return await res.json();
   } catch (err) {
@@ -65,7 +69,7 @@ export async function deleteCourse(id) {
 
 export async function enrollAllStudentsInCourse(id, onlyEligible = false) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${id}/enroll-all`, {
+    const res = await fetch(await coursesPath(`/${id}/enroll-all`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ onlyEligible })
@@ -80,7 +84,7 @@ export async function enrollAllStudentsInCourse(id, onlyEligible = false) {
 
 export async function enrollStudentsInCourse(id, studentIds) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${id}/enroll-students`, {
+    const res = await fetch(await coursesPath(`/${id}/enroll-students`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentIds })
@@ -104,7 +108,7 @@ export async function enrollStudentsInCourse(id, studentIds) {
 
 export async function fetchCourseEnrolledStudents(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${id}/enrolled-students`);
+    const res = await fetch(await coursesPath(`/${id}/enrolled-students`));
     if (!res.ok) {
       const ct = res.headers.get('content-type') || '';
       if (ct.includes('application/json')) {
@@ -124,7 +128,7 @@ export async function fetchCourseEnrolledStudents(id) {
 
 export async function removeStudentFromCourse(courseId, studentId) {
   try {
-    const res = await fetch(`${API_BASE}/api/courses/${courseId}/remove-student/${studentId}`, {
+    const res = await fetch(await coursesPath(`/${courseId}/remove-student/${studentId}`), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });

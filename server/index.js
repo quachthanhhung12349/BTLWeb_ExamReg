@@ -22,6 +22,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// --- HEALTH CHECK ---
+app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok' });
+});
+
 // --- AUTHENTICATION ---
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
@@ -71,7 +76,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.use('/api/auth', authRouter);
+//app.use('/api/auth', authRouter);
 app.use('/api/exam-registrations', examRegistrationRouter);
 app.use('/api/exam-sessions', examSessionRouter);
 app.use('/api/notifications', notificationRouter);

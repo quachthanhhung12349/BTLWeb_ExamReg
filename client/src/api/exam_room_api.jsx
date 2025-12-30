@@ -1,8 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5001';
+import { getApiBase } from './base';
+
+async function roomsPath(path = '') {
+  return `${await getApiBase()}/api/admin/exam-rooms${path}`;
+}
 
 export async function fetchExamRooms() {
   try {
-    const res = await fetch(`${API_BASE}/api/exam-rooms`);
+    const res = await fetch(await roomsPath());
     if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch rooms');
     return await res.json();
   } catch (err) {
@@ -13,7 +17,7 @@ export async function fetchExamRooms() {
 
 export async function fetchExamRoom(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/exam-rooms/${id}`);
+    const res = await fetch(await roomsPath(`/${id}`));
     if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch room');
     return await res.json();
   } catch (err) {
@@ -24,7 +28,7 @@ export async function fetchExamRoom(id) {
 
 export async function createExamRoom(data) {
   try {
-    const res = await fetch(`${API_BASE}/api/exam-rooms`, {
+    const res = await fetch(await roomsPath(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -39,7 +43,7 @@ export async function createExamRoom(data) {
 
 export async function updateExamRoom(id, data) {
   try {
-    const res = await fetch(`${API_BASE}/api/exam-rooms/${id}`, {
+    const res = await fetch(await roomsPath(`/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -54,7 +58,7 @@ export async function updateExamRoom(id, data) {
 
 export async function deleteExamRoom(id) {
   try {
-    const res = await fetch(`${API_BASE}/api/exam-rooms/${id}`, { method: 'DELETE' });
+    const res = await fetch(await roomsPath(`/${id}`), { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete room');
     return await res.json();
   } catch (err) {
