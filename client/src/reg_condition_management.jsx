@@ -5,6 +5,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const RegConditionManagement = () => {
     // State dữ liệu
+    // abcxyz abcxyz
+    // abc abc
     const [searchCourse, setSearchCourse] = useState('');
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
