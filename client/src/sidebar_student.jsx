@@ -89,37 +89,47 @@ const Sidebar = ({ onLogout }) => {
                 <ul className="nav nav-pills flex-column gap-2 mb-auto mt-3">
                     <li className="nav-item">
                         <Link
-                            to="/student/registration"
-                            className={`nav-link d-flex align-items-center ${isActive("/student/registration") || isActive("/student") ? "active shadow-sm" : "text-dark"}`}
-                            style={isActive("/student/registration") || isActive("/student") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
-                        >
-                            <i className="bi bi-pencil-square me-3"></i>
-                            Đăng ký thi
-                        </Link>
-                    </li>
-                    <li className="nav-item">
-                        <Link
-                            to="/student/courses"
-                            className={`nav-link d-flex align-items-center ${isActive("/student/courses") ? "active shadow-sm" : "text-dark"}`}
-                            style={isActive("/student/courses") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
-                        >
-                            <i className="bi bi-journal-check me-3"></i>
-                            Môn phải thi
-                        </Link>
-                    </li>
-                    <li className="nav-item">
-                        <Link
-                            to="/student/exam-slip"
-                            className={`nav-link d-flex align-items-center ${isActive("/student/exam-slip") ? "active shadow-sm" : "text-dark"}`}
-                            style={isActive("/student/exam-slip") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
-                        >
-                            <i className="bi bi-file-earmark-text me-3"></i>
-                            Phiếu báo dự thi
-                        </Link>
-                    </li>
-                </ul>
+                        to="/student"
+                        className={`nav-link d-flex align-items-center ${isActive("/student") ? "active shadow-sm" : "text-dark"}`}
+                        style={isActive("/student") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
+                    >
+                        <i className="bi bi-house me-3"></i>
+                        Trang chủ
+                    </Link>
+                </li>
+                <li className="nav-item">
+                    <Link
+                        to="/student/registration"
+                        className={`nav-link d-flex align-items-center ${isActive("/student/registration") ? "active shadow-sm" : "text-dark"}`}
+                        style={isActive("/student/registration") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
+                    >
+                        <i className="bi bi-pencil-square me-3"></i>
+                        Đăng ký thi
+                    </Link>
+                </li>
+                <li className="nav-item">
+                    <Link
+                        to="/student/courses"
+                        className={`nav-link d-flex align-items-center ${isActive("/student/courses") ? "active shadow-sm" : "text-dark"}`}
+                        style={isActive("/student/courses") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
+                    >
+                        <i className="bi bi-journal-check me-3"></i>
+                        Môn phải thi
+                    </Link>
+                </li>
+                <li className="nav-item">
+                    <Link
+                        to="/student/exam-slip"
+                        className={`nav-link d-flex align-items-center ${isActive("/student/exam-slip") ? "active shadow-sm" : "text-dark"}`}
+                        style={isActive("/student/exam-slip") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
+                    >
+                        <i className="bi bi-file-earmark-text me-3"></i>
+                        Phiếu báo dự thi
+                    </Link>
+                </li>
+            </ul>
 
-                {/* Phần Thông tin người dùng & Menu chức năng (Dropdown) */}
+            {/* Phần Thông tin người dùng & Menu chức năng (Dropdown) */}
                 <div className="mt-auto pt-3 border-top dropdown">
                     <div 
                         className="d-flex align-items-center p-2 rounded-3 bg-light border" 

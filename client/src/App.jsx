@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LayoutAdmin from './layout_admin.jsx';
 import Login from './Login.jsx';
 import DashboardAdmin from './dashboard_admin.jsx';
+import DashboardStudent from './dashboard_student.jsx';
 import CourseManagement from './course_management.jsx';
 import StudentManagement from './student_management.jsx';
 import RegConditionManagement from './reg_condition_management.jsx';
@@ -65,8 +66,8 @@ function App() {
           path="/admin"
           element={
             authed && currentRole === 'admin' ? (
-              <LayoutAdmin activeLink="StudentManagement">
-                <StudentManagement />
+              <LayoutAdmin activeLink="Dashboard">
+                <DashboardAdmin />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />
@@ -248,7 +249,7 @@ function App() {
           path="/student"
           element={
             authed && currentRole === 'student' ? (
-              <Navigate to="/student/registration" replace />
+              <DashboardStudent onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" replace />
             )
