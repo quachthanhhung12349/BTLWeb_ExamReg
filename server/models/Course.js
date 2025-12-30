@@ -10,6 +10,7 @@ const EnrolledStudentSub = new Schema({
 const CourseSchema = new Schema({
   courseId: { type: String, unique: true, index: true },
   courseName: String,
+  credits: { type: Number, default: 3 },
   maxStudents: Number,
   professor: String,
   currentEnrollment: { type: Number, default: 0 },

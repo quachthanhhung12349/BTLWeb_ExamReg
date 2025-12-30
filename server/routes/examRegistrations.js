@@ -14,19 +14,29 @@ router.get('/status/:studentId', async (req, res) => {
         if (!student) return res.status(404).json({ message: "Không tìm thấy SV" });
 
         const allCourses = await Course.find({});
+
         const subjectsWithCredits = student.courses.map(studentCourse => {
             const originalCourse = allCourses.find(c => c.courseId === studentCourse.courseId);
+            
             const isRegistered = student.registeredExams.some(re => re.courseId === studentCourse.courseId);
+
+            const rawName = studentCourse.courseName || "";
+            const cleanName = rawName.includes(' - ') 
+                ? rawName.split(' - ').slice(1).join(' - ').trim() 
+                : rawName;
             return {
                 id: studentCourse._id,
                 code: studentCourse.courseId,
-                name: studentCourse.courseName,
-                credits: originalCourse ? originalCourse.credits : 0,
+                name: cleanName,             
+                credits: originalCourse ? originalCourse.credits : 0, 
                 registered: isRegistered
             };
         });
+
         res.json(subjectsWithCredits);
-    } catch (error) { res.status(500).json({ message: "Lỗi server" }); }
+    } catch (error) { 
+        res.status(500).json({ message: "Lỗi server: " + error.message }); 
+    }
 });
 
 // 2. [POST] /api/exam-registrations
@@ -64,7 +74,7 @@ router.post('/', async (req, res) => {
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// [GET] /api/exam-registrations/subjects/:studentId
+// [GET] /api/exam-registrations/subjects
 router.get('/subjects', async (req, res) => {
     try {
         const [allCourses, allExams] = await Promise.all([
@@ -85,11 +95,11 @@ router.get('/subjects', async (req, res) => {
 
             return {
                 courseId: course.courseId,
-                courseName: cleanName, 
+                courseName: cleanName,
                 credits: course.credits || 4,
                 professor: course.professor || "N/A",
                 studentCount: course.enrolledStudents?.length || 0,
-                examTime: examSession ? new Date(examSession.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : "N/A",
+                examTime: examSession ? new Date(examSession.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "N/A",
                 examDate: examSession ? new Date(examSession.examDate).toLocaleDateString('vi-VN') : "N/A",
                 room: examSession?.roomId?.room || "N/A"
             };
@@ -104,16 +114,22 @@ router.get('/subjects', async (req, res) => {
 // [GET] /api/exam-registrations/all-courses
 router.get('/all-courses', async (req, res) => {
     try {
-        const allCourses = await Course.find({});
-        const result = allCourses.map(course => ({
-            courseId: course.courseId,
-            courseName: course.courseName,
-            professor: course.professor || "Giảng viên chưa cập nhật",
-            credits: course.credits || 3
-        }));
+        const allCourses = await Course.find({}).lean(); 
+        
+        const result = allCourses.map(course => {
+            const rawName = course.courseName || "";
+            const cleanName = rawName.includes(' - ') ? rawName.split(' - ').slice(1).join(' - ').trim() : rawName;
+
+            return {
+                courseId: course.courseId,
+                courseName: cleanName,
+                professor: course.professor || "Giảng viên chưa cập nhật",
+                credits: course.credits || 3
+            };
+        });
         res.json(result);
     } catch (error) {
-        res.status(500).json({ message: "Lỗi hệ thống khi lấy toàn bộ môn học" });
+        res.status(500).json({ message: "Lỗi hệ thống" });
     }
 });
 
@@ -121,8 +137,13 @@ router.get('/all-courses', async (req, res) => {
 // Lấy chi tiết 1 môn học (để modal hiển thị)
 router.get('/details/:courseId', async (req, res) => {
     try {
-        const course = await Course.findOne({ courseId: req.params.courseId });
+        const course = await Course.findOne({ courseId: req.params.courseId }).lean();
+        
         if (!course) return res.status(404).json({ message: "Không tìm thấy môn học" });
+
+        const rawName = course.courseName || "";
+        course.courseName = rawName.includes(' - ') ? rawName.split(' - ').slice(1).join(' - ').trim() : rawName;
+
         res.json(course);
     } catch (error) {
         res.status(500).json({ message: "Lỗi hệ thống" });
@@ -212,5 +233,45 @@ router.get('/:regId/download-info', async (req, res) => {
     }
 });
 
+const bcrypt = require('bcrypt');
+
+// [PUT] /api/exam-registrations/users/:id/password
+router.put('/users/:id/password', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { oldPassword, newPassword } = req.body;
+
+        const student = await Student.findOne({ studentId: id });
+        if (!student) {
+            return res.status(404).json({ message: "Không tìm thấy sinh viên" });
+        }
+        // Kiểm tra mật khẩu cũ
+        if (student.account.password !== oldPassword) {
+            return res.status(400).json({ message: "Mật khẩu cũ không chính xác" });
+        }
+
+        if (newPassword === oldPassword) {
+            return res.status(400).json({
+                message: "Mật khẩu mới không được trùng với mật khẩu cũ!"
+            });
+        }
+
+        const result = await Student.findOneAndUpdate(
+            { studentId: id },
+            { $set: { "account.password": newPassword } },
+            { new: true }
+        );
+
+        if (result) {
+            console.log(`Đã cập nhật mật khẩu cho SV ${id} thành: ${newPassword}`);
+            res.json({ success: true, message: "Đổi mật khẩu thành công" });
+        } else {
+            res.status(500).json({ message: "Không thể cập nhật dữ liệu vào database" });
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
+    }
+});
 
 module.exports = router;
