@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import LayoutAdmin from './layout_admin.jsx';
 import Login from './Login.jsx';
@@ -25,7 +25,8 @@ import NotificationDetail from './notification.jsx';
 
 import './App.css'
 
-function App() {
+function AppContent() {
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
 
@@ -46,18 +47,16 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userRole');
+    localStorage.clear();
     setIsLoggedIn(false);
     setUserRole(null);
-    window.location.href = '/login';
+    navigate('/login');
   };
 
   const authed = isLoggedIn;
   const currentRole = userRole;
 
   return (
-    <Router>
       <Routes>
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
 
@@ -304,8 +303,15 @@ function App() {
           }
         />
       </Routes>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
-};
+}
 
 export default App;
