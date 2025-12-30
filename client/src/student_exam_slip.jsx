@@ -12,11 +12,13 @@ const ExamSlipPage = ({ onLogout }) => {
   // Mã SV lấy từ thực tế database sau khi seed
   const studentId = "23021701";
 
+  const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
+
   useEffect(() => {
     const fetchExamSlips = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`http://localhost:5000/api/exam-slips/${studentId}`);
+        const res = await axios.get(`${API_BASE_URL}/${studentId}/view-slips`);
         setStudentData(res.data.studentInfo);
         setRegisteredExams(res.data.registeredExams);
         if (res.data.registeredExams.length > 0) {
@@ -30,6 +32,19 @@ const ExamSlipPage = ({ onLogout }) => {
     };
     fetchExamSlips();
   }, []);
+
+  // Xử lý khi ấn nút "Tải PDF"
+  const handleDownloadPDF = async (regId) => {
+    try {
+        // Chỉ khi ấn Tải mới gọi đến route download-info
+        const res = await axios.get(`${API_BASE_URL}/${regId}/download-info`);
+        console.log("Đã lấy thông tin tải về:", res.data);
+        alert("Đang chuẩn bị file PDF cho môn: " + selectedExam.courseName);
+    } catch (err) {
+        alert("Lỗi khi chuẩn bị file tải về");
+    }
+  };
+
 
   return (
     <div className="d-flex vh-100 bg-light">
@@ -99,9 +114,9 @@ const ExamSlipPage = ({ onLogout }) => {
                   <div className="list-group list-group-flush gap-2">
                     {registeredExams.map((exam) => (
                       <button
-                        key={exam.id}
+                        key={exam.regId}
                         onClick={() => setSelectedExam(exam)}
-                        className={`list-group-item list-group-item-action border rounded-3 py-3 ${selectedExam?.id === exam.id ? "bg-primary bg-opacity-10 border-primary text-primary fw-bold" : "border-light"}`}
+                        className={`list-group-item list-group-item-action border rounded-3 py-3 ${selectedExam?.regId === exam.regId ? "bg-primary bg-opacity-10 border-primary text-primary fw-bold" : "border-light"}`}
                       >
                         <div className="small opacity-75">{exam.code}</div>
                         <div>{exam.courseName}</div>

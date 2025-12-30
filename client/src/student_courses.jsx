@@ -10,6 +10,8 @@ const CourseListPage = ({ onLogout }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
+
   useEffect(() => {
     fetchAllCourses();
   }, []);
@@ -17,18 +19,20 @@ const CourseListPage = ({ onLogout }) => {
   const fetchAllCourses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:5000/api/student-courses/all");
+      // Gọi đến route mới chúng ta vừa thêm ở Bước 1
+      const response = await axios.get(`${API_BASE_URL}/all-courses`);
       setCourses(response.data);
       setLoading(false);
     } catch (error) {
-      console.error(error);
+      console.error("Lỗi fetch all courses:", error);
       setLoading(false);
     }
   };
 
   const handleShowDetails = async (courseId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/student-courses/details/${courseId}`);
+      // Gọi đến route chi tiết mới
+      const response = await axios.get(`${API_BASE_URL}/details/${courseId}`);
       setSelectedCourse(response.data);
       setShowModal(true);
     } catch (error) {

@@ -1,11 +1,39 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom"; // Thêm useLocation để nhận diện trang hiện tại
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import logo from "./assets/logo.png";
 
-const Sidebar = ({ onLogout, studentName = "Nguyễn Văn A" }) => {
+const Sidebar = ({ onLogout }) => {
     const location = useLocation();
 
-    // Hàm kiểm tra xem đường dẫn có đang khớp với menu không để tô màu xanh (active)
+    const [studentInfo, setStudentInfo] = useState({
+        name: "Đang tải...",
+        role: "Sinh viên"
+    });
+
+    useEffect(() => {
+        const fetchRealProfile = async () => {
+            try {
+                const sId = localStorage.getItem("studentId");
+                if (!sId) return;
+
+                // Gọi API mà trang Phiếu báo dự thi đang dùng
+                const response = await fetch(`http://localhost:5000/api/exam-registrations/${sId}/view-slips`);
+                const data = await response.json();
+
+                if (response.ok && data.studentInfo) {
+                    setStudentInfo({
+                        name: data.studentInfo.name,
+                        role: "Sinh viên"
+                    });
+                }
+            } catch (error) {
+                console.error("Lỗi khi lấy thông tin Sidebar:", error);
+            }
+        };
+
+        fetchRealProfile();
+    }, []);
+
     const isActive = (path) => location.pathname === path;
 
     return (
@@ -13,7 +41,6 @@ const Sidebar = ({ onLogout, studentName = "Nguyễn Văn A" }) => {
             className="bg-white border-end d-flex flex-column p-3 shadow-sm"
             style={{ width: "280px", minWidth: "280px", height: "100vh", position: "sticky", top: 0 }}
         >
-            {/* LOGO & TITLE */}
             <div className="d-flex align-items-center mb-4 px-2 pt-2">
                 <img
                     src={logo}
@@ -29,7 +56,6 @@ const Sidebar = ({ onLogout, studentName = "Nguyễn Văn A" }) => {
 
             <hr className="text-secondary opacity-25 my-2" />
 
-            {/* MENU - SỬ DỤNG COMPONENT <Link> ĐỂ CHUYỂN TRANG */}
             <ul className="nav nav-pills flex-column gap-2 mb-auto mt-3">
                 <li className="nav-item">
                     <Link
@@ -64,16 +90,20 @@ const Sidebar = ({ onLogout, studentName = "Nguyễn Văn A" }) => {
             </ul>
 
             <div className="mt-auto pt-3 border-top">
-                {/* Thông tin user */}
                 <div className="d-flex align-items-center p-2 mb-2 rounded-3 bg-light border">
                     <div className="rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center me-3" style={{ width: "38px", height: "38px" }}>
                         <i className="bi bi-person-fill text-secondary fs-5"></i>
                     </div>
                     <div style={{ lineHeight: '1.1' }}>
-                        <div className="fw-bold text-dark" style={{ fontSize: "0.9rem" }}>{studentName}</div>
-                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>Sinh viên</div>
+                        <div className="fw-bold text-dark" style={{ fontSize: "0.9rem" }}>
+                            {studentInfo.name}
+                        </div>
+                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                            {studentInfo.role}
+                        </div>
                     </div>
                 </div>
+
 
                 <button onClick={onLogout} className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
                     <i className="bi bi-box-arrow-right me-2"></i>

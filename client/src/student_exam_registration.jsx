@@ -10,7 +10,8 @@ const RegistrationPage = ({ onLogout }) => {
 
   // Giả sử lấy mã sinh viên từ hệ thống đăng nhập
   const studentId = "23021701";
-  const API_BASE_URL = "http://localhost:5000/api/registration";
+  const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
+
 
   const fetchSubjects = async () => {
     try {
@@ -32,9 +33,10 @@ const RegistrationPage = ({ onLogout }) => {
   // Xử lý Đăng ký
   const handleRegister = async (courseId) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/register`, {
+      const response = await axios.post(`${API_BASE_URL}`, {
         studentId,
-        courseId
+        courseId,
+         action: 'register'
       });
 
       if (response.data.success) {
@@ -55,9 +57,10 @@ const RegistrationPage = ({ onLogout }) => {
   const handleUnregister = async (courseId) => {
     if (window.confirm("Bạn có chắc chắn muốn hủy đăng ký môn này?")) {
       try {
-        const response = await axios.post(`${API_BASE_URL}/unregister`, {
+        const response = await axios.post(`${API_BASE_URL}`, {
           studentId,
-          courseId
+          courseId,
+          action: 'unregister'
         });
 
         if (response.data.success) {
