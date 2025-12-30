@@ -115,7 +115,7 @@ const ExamSlipPage = ({ onLogout }) => {
 
       <main className="flex-grow-1 p-4 overflow-auto main-content">
         <div className="d-print-none">
-          <HeaderStudent title="Phiếu báo dự thi" subTitle="Thông tin chi tiết" notificationCount={3} />
+          <HeaderStudent title="Phiếu báo dự thi" subTitle="Thông tin chi tiết" />
         </div>
 
         {loading ? (
