@@ -8,12 +8,17 @@ const RegistrationPage = ({ onLogout }) => {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Giả sử lấy mã sinh viên từ hệ thống đăng nhập
-  const studentId = "23021701";
+  const studentId = localStorage.getItem("studentId");
+  
   const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
 
-
   const fetchSubjects = async () => {
+    // Kiểm tra nếu không có studentId thì không gọi API
+    if (!studentId) {
+        console.error("Không tìm thấy studentId trong hệ thống");
+        return;
+    }
+
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/status/${studentId}`);
@@ -28,23 +33,18 @@ const RegistrationPage = ({ onLogout }) => {
 
   useEffect(() => {
     fetchSubjects();
-  }, []);
+  }, [studentId]); 
 
   // Xử lý Đăng ký
   const handleRegister = async (courseId) => {
     try {
       const response = await axios.post(`${API_BASE_URL}`, {
-        studentId,
+        studentId, 
         courseId,
-         action: 'register'
+        action: 'register'
       });
 
       if (response.data.success) {
-        setSubjects(prevSubjects =>
-          prevSubjects.map(s =>
-            s.code === courseId ? { ...s, registered: true } : s
-          )
-        );
         alert("Đăng ký thành công!");
         fetchSubjects();
       }
@@ -64,12 +64,8 @@ const RegistrationPage = ({ onLogout }) => {
         });
 
         if (response.data.success) {
-          setSubjects(prevSubjects =>
-            prevSubjects.map(s =>
-              s.code === courseId ? { ...s, registered: false } : s
-            )
-          );
-          fetchSubjects();
+          alert("Đã hủy đăng ký");
+          fetchSubjects(); 
         }
       } catch (error) {
         alert(error.response?.data?.message || "Hủy đăng ký thất bại");

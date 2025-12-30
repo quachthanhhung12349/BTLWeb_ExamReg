@@ -44,99 +44,64 @@ router.post('/', async (req, res) => {
             await Student.updateOne({ studentId }, { $pull: { registeredExams: { courseId } } });
             return res.json({ success: true, message: "Đã hủy đăng ký" });
         }
-        
+
         // Logic Register
         const exam = await Exam.findOne({ "sessions.course": new RegExp(courseId, 'i') });
         const session = exam.sessions.find(s => s.course.toUpperCase().includes(courseId.toUpperCase()));
-        
+
         await Exam.updateOne(
             { _id: exam._id, "sessions._id": session._id },
             { $addToSet: { "sessions.$.registeredStudents": { studentId: student._id, studentName: student.name } } }
         );
-        await Student.updateOne({ studentId }, { 
-            $push: { registeredExams: { 
-                examId: exam._id, examName: exam.examName, sessionId: session._id, courseId, registerTime: new Date() 
-            } } 
+        await Student.updateOne({ studentId }, {
+            $push: {
+                registeredExams: {
+                    examId: exam._id, examName: exam.examName, sessionId: session._id, courseId, registerTime: new Date()
+                }
+            }
         });
         res.json({ success: true, message: "Đăng ký thành công" });
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 // [GET] /api/exam-registrations/subjects/:studentId
-// MÀN HÌNH 2: Hiển thị danh sách môn SV phải thi
-router.get('/subjects/:studentId', async (req, res) => {
+router.get('/subjects', async (req, res) => {
     try {
-        const student = await Student.findOne({ studentId: req.params.studentId });
-        if (!student) return res.status(404).json({ message: "Không tìm thấy SV" });
+        const [allCourses, allExams] = await Promise.all([
+            Course.find({}),
+            Exam.find({}).populate('sessions.roomId')
+        ]);
 
-        const allCourses = await Course.find({});
-        const result = student.courses.map(sc => {
-            const c = allCourses.find(item => item.courseId === sc.courseId);
+        const result = allCourses.map(course => {
+            let examSession = null;
+            allExams.forEach(exam => {
+                const found = exam.sessions.find(s => s.course.includes(course.courseId));
+                if (found) examSession = found;
+            });
+
+            // Loại bỏ phần mã môn học ở đầu tên môn
+            const rawName = course.courseName || "";
+            const cleanName = rawName.includes(' - ') ? rawName.split(' - ').pop().trim() : rawName;
+
             return {
-                courseId: sc.courseId,
-                courseName: sc.courseName,
-                professor: c?.professor || "Chưa cập nhật",
-                credits: c?.credits || 3
+                courseId: course.courseId,
+                courseName: cleanName, 
+                credits: course.credits || 4,
+                professor: course.professor || "N/A",
+                studentCount: course.enrolledStudents?.length || 0,
+                examTime: examSession ? new Date(examSession.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : "N/A",
+                examDate: examSession ? new Date(examSession.examDate).toLocaleDateString('vi-VN') : "N/A",
+                room: examSession?.roomId?.room || "N/A"
             };
         });
+
         res.json(result);
-    } catch (e) { res.status(500).json({ message: e.message }); }
+    } catch (e) {
+        res.status(500).json({ message: "Lỗi server: " + e.message });
+    }
 });
 
-// [GET] /api/exam-registrations/:studentId/view-slips
-router.get('/:studentId/view-slips', async (req, res) => {
-    try {
-        const student = await Student.findOne({ studentId: req.params.studentId });
-        if (!student) return res.status(404).json({ message: "Không tìm thấy SV" });
-
-        const slips = await Promise.all(student.registeredExams.map(async (reg) => {
-            const exam = await Exam.findById(reg.examId).populate('sessions.roomId');
-            if (!exam) return null;
-            const session = exam.sessions.find(s => s._id.toString() === reg.sessionId.toString());
-            if (!session) return null;
-            
-            const fullCourseName = session.course || "";
-            const cleanName = fullCourseName.split(' - ').pop(); 
-
-            const seatIdx = session.registeredStudents.findIndex(s => s.studentId.toString() === student._id.toString());
-            
-            return {
-                regId: reg._id.toString(), // Đảm bảo chuyển về string để so sánh
-                examName: exam.examName,
-                courseName: cleanName,
-                code: reg.courseId,
-                date: new Date(session.examDate).toLocaleDateString('vi-VN'),
-                time: `${new Date(session.startTime).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}`,
-                room: session.roomId ? session.roomId.room : "N/A",
-                campus: session.roomId ? session.roomId.campus : "N/A",
-                seat: (seatIdx + 1).toString().padStart(2, '0')
-            };
-        }));
-
-        res.json({
-            studentInfo: { 
-                name: student.name, 
-                studentId: student.studentId, 
-                class: student.class, 
-                // FIX: Định dạng lại ngày sinh tại đây
-                birthDate: student.birthDate ? new Date(student.birthDate).toLocaleDateString('vi-VN') : "N/A" 
-            },
-            registeredExams: slips.filter(s => s !== null)
-        });
-    } catch (e) { res.status(500).json({ message: e.message }); }
-});
-
-// [GET] /api/exam-registrations/:regId/download-info
-// MÀN HÌNH 3 (Giai đoạn 2): Khi ấn nút Tải về/In, lấy dữ liệu chi tiết hoặc render PDF
-router.get('/:regId/download-info', async (req, res) => {
-    try {
-        const { regId } = req.params;
-        // Logic tìm kiếm thông tin cực kỳ chi tiết của 1 bản đăng ký duy nhất dựa trên regId
-        // Dùng để tạo file PDF hoặc định dạng in ấn chuyên nghiệp
-        res.json({ message: "Dữ liệu chi tiết phục vụ download/in", id: regId });
-    } catch (e) { res.status(500).json({ message: e.message }); }
-});
-
+// [GET] /api/exam-registrations/all-courses
 router.get('/all-courses', async (req, res) => {
     try {
         const allCourses = await Course.find({});
@@ -161,6 +126,89 @@ router.get('/details/:courseId', async (req, res) => {
         res.json(course);
     } catch (error) {
         res.status(500).json({ message: "Lỗi hệ thống" });
+    }
+});
+
+
+// [GET] /api/exam-registrations/:studentId/view-slips
+router.get('/:studentId/view-slips', async (req, res) => {
+    try {
+        const student = await Student.findOne({ studentId: req.params.studentId });
+        if (!student) return res.status(404).json({ message: "Không tìm thấy SV" });
+
+        const slips = await Promise.all(student.registeredExams.map(async (reg) => {
+            const exam = await Exam.findById(reg.examId).populate('sessions.roomId');
+            if (!exam) return null;
+            const session = exam.sessions.find(s => s._id.toString() === reg.sessionId.toString());
+            if (!session) return null;
+
+            const fullCourseName = session.course || "";
+            const cleanName = fullCourseName.split(' - ').pop();
+
+            const seatIdx = session.registeredStudents.findIndex(s => s.studentId.toString() === student._id.toString());
+
+            return {
+                regId: reg._id.toString(), // Đảm bảo chuyển về string để so sánh
+                examName: exam.examName,
+                courseName: cleanName,
+                code: reg.courseId,
+                date: new Date(session.examDate).toLocaleDateString('vi-VN'),
+                time: `${new Date(session.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+                room: session.roomId ? session.roomId.room : "N/A",
+                campus: session.roomId ? session.roomId.campus : "N/A",
+                seat: (seatIdx + 1).toString().padStart(2, '0')
+            };
+        }));
+
+        res.json({
+            studentInfo: {
+                name: student.name,
+                studentId: student.studentId,
+                class: student.class,
+                // FIX: Định dạng lại ngày sinh tại đây
+                birthDate: student.birthDate ? new Date(student.birthDate).toLocaleDateString('vi-VN') : "N/A"
+            },
+            registeredExams: slips.filter(s => s !== null)
+        });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// [GET] /api/exam-registrations/:regId/download-info
+router.get('/:regId/download-info', async (req, res) => {
+    try {
+        const { regId } = req.params;
+
+        const student = await Student.findOne({ "registeredExams._id": regId });
+        if (!student) return res.status(404).json({ message: "Không tìm thấy thông tin đăng ký" });
+
+        const reg = student.registeredExams.id(regId);
+
+        const exam = await Exam.findById(reg.examId).populate('sessions.roomId');
+        const session = exam.sessions.id(reg.sessionId);
+
+        const seatIdx = session.registeredStudents.findIndex(
+            s => s.studentId.toString() === student._id.toString()
+        );
+
+        res.json({
+            studentInfo: {
+                name: student.name,
+                studentId: student.studentId,
+                class: student.class,
+                birthDate: student.birthDate ? new Date(student.birthDate).toLocaleDateString('vi-VN') : "N/A"
+            },
+            examInfo: {
+                examName: exam.examName,
+                courseName: reg.courseId + " - " + reg.examName,
+                date: new Date(session.examDate).toLocaleDateString('vi-VN'),
+                time: `${new Date(session.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+                room: session.roomId ? session.roomId.room : "N/A",
+                campus: session.roomId ? session.roomId.campus : "N/A",
+                seat: (seatIdx + 1).toString().padStart(2, '0')
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ message: "Lỗi Server: " + e.message });
     }
 });
 

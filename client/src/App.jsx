@@ -42,7 +42,6 @@ function App() {
     setUserRole(role);
   };
 
-  // Hàm xử lý đăng xuất chung cho cả Admin và Student
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userRole');
@@ -261,7 +260,6 @@ function App() {
           }
         />
 
-        {/* Hợp lý hóa đường dẫn thông báo cho Student */}
         <Route
           path="/student/notification/:id"
           element={authed ? <NotificationDetail /> : <Navigate to="/login" replace />}

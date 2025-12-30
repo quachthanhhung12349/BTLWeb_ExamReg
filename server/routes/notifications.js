@@ -6,7 +6,7 @@ const Student = require('../models/Student');
 // [GET] /api/notifications/detail/:id
 router.get('/', async (req, res) => {
     try {
-        const { studentId } = req.query; // Lấy từ query string (?studentId=...)
+        const { studentId } = req.query; 
         
         if (!studentId) return res.status(400).json({ message: "Thiếu mã sinh viên" });
 
@@ -45,10 +45,8 @@ router.put('/read/:id', async (req, res) => {
         const student = await Student.findOne({ studentId });
         if (!student) return res.status(404).json({ message: "SV không tồn tại" });
 
-        // Tìm thông báo
         const notification = await Notification.findById(id);
         
-        // Kiểm tra xem SV này đã có trong mảng recipients chưa
         const recipientIndex = notification.recipients.findIndex(
             r => r.studentId.toString() === student._id.toString()
         );

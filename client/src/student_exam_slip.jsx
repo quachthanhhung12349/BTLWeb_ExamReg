@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
 
@@ -9,13 +11,14 @@ const ExamSlipPage = ({ onLogout }) => {
   const [selectedExam, setSelectedExam] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mã SV lấy từ thực tế database sau khi seed
-  const studentId = "23021701";
+  const slipRef = useRef();
 
+  const studentId = localStorage.getItem("studentId");
   const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
 
   useEffect(() => {
     const fetchExamSlips = async () => {
+      if (!studentId) return;
       try {
         setLoading(true);
         const res = await axios.get(`${API_BASE_URL}/${studentId}/view-slips`);
@@ -31,20 +34,30 @@ const ExamSlipPage = ({ onLogout }) => {
       }
     };
     fetchExamSlips();
-  }, []);
+  }, [studentId]);
 
-  // Xử lý khi ấn nút "Tải PDF"
   const handleDownloadPDF = async (regId) => {
     try {
-        // Chỉ khi ấn Tải mới gọi đến route download-info
-        const res = await axios.get(`${API_BASE_URL}/${regId}/download-info`);
-        console.log("Đã lấy thông tin tải về:", res.data);
-        alert("Đang chuẩn bị file PDF cho môn: " + selectedExam.courseName);
+      const res = await axios.get(`${API_BASE_URL}/${regId}/download-info`);
+      console.log("Xác nhận dữ liệu từ server:", res.data);
+
+      const element = slipRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2, 
+        useCORS: true
+      });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`PhieuBao_${studentId}_${selectedExam.code}.pdf`);
     } catch (err) {
-        alert("Lỗi khi chuẩn bị file tải về");
+      alert("Lỗi khi tải file PDF");
     }
   };
-
 
   return (
     <div className="d-flex vh-100 bg-light">
@@ -129,7 +142,7 @@ const ExamSlipPage = ({ onLogout }) => {
 
             <div className="col-md-8">
               {selectedExam && studentData ? (
-                <div className="card shadow border-0 p-5 rounded-4 bg-white position-relative overflow-hidden">
+                <div ref={slipRef} className="card shadow border-0 p-5 rounded-4 bg-white position-relative overflow-hidden">
                   <div className="position-absolute top-0 start-0 w-100" style={{ height: '6px', backgroundColor: '#4f46e5' }}></div>
 
                   <div className="text-center mb-5">
@@ -166,32 +179,24 @@ const ExamSlipPage = ({ onLogout }) => {
 
                   <div className="col-12 my-3"><hr className="opacity-10" /></div>
 
-                  <div className="row g-4">
-                    <div className="col-12">
-                      <label className="text-muted small text-uppercase fw-bold d-block mb-1">Môn thi</label>
-                      <p className="fs-4 fw-bold text-primary mb-0">{selectedExam.courseName} ({selectedExam.code})</p>
-                    </div>
-
-                    <div className="col-md-6 mt-4">
-                      <div className="d-flex align-items-start mb-4">
-                        <div className="bg-light p-2 rounded-3 me-3"><i className="bi bi-calendar3 text-primary"></i></div>
+                  <div className="row g-4 mt-2">
+                    <div className="col-md-6">
+                      <div className="d-flex align-items-start">
+                        <div className="bg-light p-2 rounded-3 me-3">
+                          <i className="bi bi-calendar3 text-primary"></i>
+                        </div>
                         <div>
                           <label className="text-muted small fw-bold">Ngày thi</label>
                           <div className="fw-bold fs-5">{selectedExam.date}</div>
                         </div>
                       </div>
-                      <div className="d-flex align-items-start">
-                        <div className="bg-light p-2 rounded-3 me-3"><i className="bi bi-clock text-primary"></i></div>
-                        <div>
-                          <label className="text-muted small fw-bold">Giờ thi</label>
-                          <div className="fw-bold fs-5">{selectedExam.time}</div>
-                        </div>
-                      </div>
                     </div>
 
-                    <div className="col-md-6 mt-4">
-                      <div className="d-flex align-items-start mb-4">
-                        <div className="bg-light p-2 rounded-3 me-3"><i className="bi bi-geo-alt text-primary"></i></div>
+                    <div className="col-md-6">
+                      <div className="d-flex align-items-start">
+                        <div className="bg-light p-2 rounded-3 me-3">
+                          <i className="bi bi-geo-alt text-primary"></i>
+                        </div>
                         <div>
                           <label className="text-muted small fw-bold">Phòng thi</label>
                           <div className="fw-bold fs-5">
@@ -200,12 +205,28 @@ const ExamSlipPage = ({ onLogout }) => {
                           </div>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="d-flex align-items-start border border-danger border-opacity-25 bg-danger bg-opacity-10 p-2 rounded-3">
-                        <div className="p-2 rounded-3 me-3"><i className="bi bi-person-badge text-danger fs-4"></i></div>
+                    <div className="col-md-6 mt-4">
+                      <div className="d-flex align-items-start">
+                        <div className="bg-light p-2 rounded-3 me-3">
+                          <i className="bi bi-clock text-primary"></i>
+                        </div>
                         <div>
-                          <label className="text-danger small fw-bold">Số báo danh</label>
-                          <div className="fw-bold text-danger fs-4">{selectedExam.seat}</div>
+                          <label className="text-muted small fw-bold">Giờ thi</label>
+                          <div className="fw-bold fs-5">{selectedExam.time}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-md-6 mt-4">
+                      <div className="d-flex align-items-start">
+                        <div className="bg-light p-2 rounded-3 me-3">
+                          <i className="bi bi-person-badge text-primary"></i>
+                        </div>
+                        <div>
+                          <label className="text-muted small fw-bold">Số báo danh</label>
+                          <div className="fw-bold fs-5">{selectedExam.seat}</div>
                         </div>
                       </div>
                     </div>
@@ -215,7 +236,12 @@ const ExamSlipPage = ({ onLogout }) => {
                     <button className="btn btn-outline-primary px-4 py-2 fw-bold" onClick={() => window.print()}>
                       <i className="bi bi-printer me-2"></i> In phiếu báo
                     </button>
-                    <button className="btn btn-success px-4 py-2 fw-bold">Tải PDF</button>
+                    <button
+                      className="btn btn-success px-4 py-2 fw-bold"
+                      onClick={() => handleDownloadPDF(selectedExam.regId)}
+                    >
+                      Tải PDF
+                    </button>
                   </div>
                 </div>
               ) : (

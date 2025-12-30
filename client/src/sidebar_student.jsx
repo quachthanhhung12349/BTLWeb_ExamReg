@@ -3,20 +3,17 @@ import { Link, useLocation } from "react-router-dom";
 import logo from "./assets/logo.png";
 
 const Sidebar = ({ onLogout }) => {
-    const location = useLocation();
-
     const [studentInfo, setStudentInfo] = useState({
-        name: "Đang tải...",
+        name: localStorage.getItem("studentName") || "Đang tải...",
         role: "Sinh viên"
     });
 
     useEffect(() => {
-        const fetchRealProfile = async () => {
-            try {
-                const sId = localStorage.getItem("studentId");
-                if (!sId) return;
+        const fetchStudentProfile = async () => {
+            const sId = localStorage.getItem("studentId");
+            if (!sId || sId === 'admin') return;
 
-                // Gọi API mà trang Phiếu báo dự thi đang dùng
+            try {
                 const response = await fetch(`http://localhost:5000/api/exam-registrations/${sId}/view-slips`);
                 const data = await response.json();
 
@@ -25,13 +22,14 @@ const Sidebar = ({ onLogout }) => {
                         name: data.studentInfo.name,
                         role: "Sinh viên"
                     });
+                    localStorage.setItem("studentName", data.studentInfo.name);
                 }
-            } catch (error) {
-                console.error("Lỗi khi lấy thông tin Sidebar:", error);
+            } catch (err) {
+                console.error("Lỗi lấy thông tin từ DB:", err);
             }
         };
 
-        fetchRealProfile();
+        fetchStudentProfile();
     }, []);
 
     const isActive = (path) => location.pathname === path;
