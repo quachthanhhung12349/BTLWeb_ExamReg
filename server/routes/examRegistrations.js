@@ -5,7 +5,7 @@ const Student = require('../models/Student');
 const Exam = require('../models/Exam');
 const Course = require('../models/Course');
 
-// 1. [GET] /api/exam-registrations/status/:studentId
+// [GET] /api/exam-registrations/status/:studentId
 // Tương ứng: "Huỷ đăng ký thi" (để lấy trạng thái hiện tại trước khi huỷ/đăng ký)
 router.get('/status/:studentId', async (req, res) => {
     try {
@@ -13,54 +13,89 @@ router.get('/status/:studentId', async (req, res) => {
         const student = await Student.findOne({ studentId });
         if (!student) return res.status(404).json({ message: "Không tìm thấy SV" });
 
+        const studentCourseIds = student.courses.map(c => c.courseId);
+
+        const allExams = await Exam.find({}).populate('sessions.roomId');
         const allCourses = await Course.find({});
 
-        const subjectsWithCredits = student.courses.map(studentCourse => {
-            const originalCourse = allCourses.find(c => c.courseId === studentCourse.courseId);
-            
-            const isRegistered = student.registeredExams.some(re => re.courseId === studentCourse.courseId);
+        let availableSessions = [];
 
-            const rawName = studentCourse.courseName || "";
-            const cleanName = rawName.includes(' - ') 
-                ? rawName.split(' - ').slice(1).join(' - ').trim() 
-                : rawName;
-            return {
-                id: studentCourse._id,
-                code: studentCourse.courseId,
-                name: cleanName,             
-                credits: originalCourse ? originalCourse.credits : 0, 
-                registered: isRegistered
-            };
+        allExams.forEach(exam => {
+            exam.sessions.forEach(session => {
+                const courseCode = session.course.split(' - ')[0].trim();
+
+                if (studentCourseIds.includes(courseCode)) {
+                    const originalCourse = allCourses.find(c => c.courseId === courseCode);
+                    
+                    const sessionsOfThisCourse = exam.sessions.filter(s => s.course.startsWith(courseCode));
+                    const sessionCount = sessionsOfThisCourse.length;
+
+                    const totalEnrolled = originalCourse ? originalCourse.currentEnrollment : 0;
+                    const baseLimit = Math.ceil(totalEnrolled / sessionCount);
+                    const roundedLimit = Math.ceil(baseLimit / 10) * 10;
+
+                    const roomCapacity = session.roomId ? session.roomId.maxStudents : 999;
+                    const finalMaxDisplay = Math.min(roundedLimit, roomCapacity);
+
+                    const isRegisteredThisSession = student.registeredExams.some(
+                        re => re.sessionId.toString() === session._id.toString()
+                    );
+                    const isRegisteredOtherSession = student.registeredExams.some(
+                        re => re.courseId === courseCode && re.sessionId.toString() !== session._id.toString()
+                    );
+
+                    const cleanName = session.course.includes(' - ') 
+                        ? session.course.split(' - ').slice(1).join(' - ').trim() 
+                        : session.course;
+
+                    availableSessions.push({
+                        sessionId: session._id,
+                        courseId: courseCode,
+                        name: cleanName,
+                        credits: originalCourse ? originalCourse.credits : 0,
+                        examDate: session.examDate,
+                        startTime: session.startTime,
+                        room: session.roomId ? session.roomId.room : "N/A",
+                        maxStudents: finalMaxDisplay, 
+                        registeredCount: session.registeredStudents.length,
+                        registered: isRegisteredThisSession,
+                        disabled: isRegisteredOtherSession || session.registeredStudents.length >= finalMaxDisplay
+                    });
+                }
+            });
         });
 
-        res.json(subjectsWithCredits);
-    } catch (error) { 
-        res.status(500).json({ message: "Lỗi server: " + error.message }); 
+        res.json(availableSessions);
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi server: " + error.message });
     }
 });
 
-// 2. [POST] /api/exam-registrations
-// Tương ứng: "Đăng ký thi" và logic "Huỷ đăng ký" (Nếu bạn dùng chung 1 route xử lý)
+// [POST] /api/exam-registrations
+// Tương ứng: "Đăng ký thi" và logic "Huỷ đăng ký" 
 router.post('/', async (req, res) => {
-    const { studentId, courseId, action } = req.body; // action: 'register' | 'unregister'
+    const { studentId, courseId, sessionId, action } = req.body;
     try {
         const student = await Student.findOne({ studentId });
+        const exam = await Exam.findOne({ "sessions._id": sessionId });
+        const session = exam.sessions.id(sessionId);
+
         if (action === 'unregister') {
-            const reg = student.registeredExams.find(r => r.courseId === courseId);
             await Exam.updateOne(
-                { _id: reg.examId, "sessions._id": reg.sessionId },
+                { _id: exam._id, "sessions._id": sessionId },
                 { $pull: { "sessions.$.registeredStudents": { studentId: student._id } } }
             );
-            await Student.updateOne({ studentId }, { $pull: { registeredExams: { courseId } } });
+            await Student.updateOne({ studentId }, { $pull: { registeredExams: { sessionId: new mongoose.Types.ObjectId(sessionId) } } });
             return res.json({ success: true, message: "Đã hủy đăng ký" });
         }
 
-        // Logic Register
-        const exam = await Exam.findOne({ "sessions.course": new RegExp(courseId, 'i') });
-        const session = exam.sessions.find(s => s.course.toUpperCase().includes(courseId.toUpperCase()));
+        const room = await mongoose.model('ExamRoom').findById(session.roomId);
+        if (session.registeredStudents.length >= room.maxStudents) {
+            return res.status(400).json({ message: "Ca thi đã đầy sinh viên" });
+        }
 
         await Exam.updateOne(
-            { _id: exam._id, "sessions._id": session._id },
+            { _id: exam._id, "sessions._id": sessionId },
             { $addToSet: { "sessions.$.registeredStudents": { studentId: student._id, studentName: student.name } } }
         );
         await Student.updateOne({ studentId }, {
@@ -89,7 +124,6 @@ router.get('/subjects', async (req, res) => {
                 if (found) examSession = found;
             });
 
-            // Loại bỏ phần mã môn học ở đầu tên môn
             const rawName = course.courseName || "";
             const cleanName = rawName.includes(' - ') ? rawName.split(' - ').pop().trim() : rawName;
 
@@ -137,16 +171,25 @@ router.get('/all-courses', async (req, res) => {
 // Lấy chi tiết 1 môn học (để modal hiển thị)
 router.get('/details/:courseId', async (req, res) => {
     try {
-        const course = await Course.findOne({ courseId: req.params.courseId }).lean();
+        const course = await Course.findOne({ courseId: req.params.courseId })
+            .populate('enrolledStudents.studentId') 
+            .lean();
         
         if (!course) return res.status(404).json({ message: "Không tìm thấy môn học" });
+
+        if (course.enrolledStudents) {
+            course.enrolledStudents = course.enrolledStudents.map(st => ({
+                ...st,
+                studentId: st.studentId ? st.studentId.studentId : "N/A" 
+            }));
+        }
 
         const rawName = course.courseName || "";
         course.courseName = rawName.includes(' - ') ? rawName.split(' - ').slice(1).join(' - ').trim() : rawName;
 
         res.json(course);
     } catch (error) {
-        res.status(500).json({ message: "Lỗi hệ thống" });
+        res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
     }
 });
 
@@ -169,7 +212,7 @@ router.get('/:studentId/view-slips', async (req, res) => {
             const seatIdx = session.registeredStudents.findIndex(s => s.studentId.toString() === student._id.toString());
 
             return {
-                regId: reg._id.toString(), // Đảm bảo chuyển về string để so sánh
+                regId: reg._id.toString(), 
                 examName: exam.examName,
                 courseName: cleanName,
                 code: reg.courseId,
@@ -186,7 +229,6 @@ router.get('/:studentId/view-slips', async (req, res) => {
                 name: student.name,
                 studentId: student.studentId,
                 class: student.class,
-                // FIX: Định dạng lại ngày sinh tại đây
                 birthDate: student.birthDate ? new Date(student.birthDate).toLocaleDateString('vi-VN') : "N/A"
             },
             registeredExams: slips.filter(s => s !== null)
@@ -253,6 +295,12 @@ router.put('/users/:id/password', async (req, res) => {
         if (newPassword === oldPassword) {
             return res.status(400).json({
                 message: "Mật khẩu mới không được trùng với mật khẩu cũ!"
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                message: "Mật khẩu mới phải có ít nhất 6 ký tự!"
             });
         }
 

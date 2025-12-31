@@ -7,11 +7,13 @@ export default function Login({ onLoginSuccess }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false); 
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
             const response = await fetch(`${await getApiBase()}/api/login`, {
@@ -38,23 +40,21 @@ export default function Login({ onLoginSuccess }) {
                 } else {
                     navigate('/');
                 }
-
             } else {
-                setError(data.message || 'Đăng nhập thất bại');
+                setError(data.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
             }
         } catch (err) {
             console.error(err);
-            setError('Lỗi kết nối đến server');
+            setError('Lỗi kết nối đến server. Vui lòng kiểm tra lại mạng.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="d-flex" style={{ height: "100vh" }}>
             <div
-                style={{
-                    width: "50%",
-                    backgroundColor: "#4287f5"
-                }}
+                style={{ width: "50%", backgroundColor: "#4287f5" }}
                 className="d-none d-md-block"
             ></div>
 
@@ -72,6 +72,12 @@ export default function Login({ onLoginSuccess }) {
                     <h2 className="fw-bold mb-2">Đăng nhập</h2>
                     <p className="text-muted mb-4">Vui lòng nhập thông tin</p>
 
+                    {error && (
+                        <div className="alert alert-danger d-flex align-items-center justify-content-center py-2" role="alert" style={{ fontSize: '14px' }}>
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>{error}</div>
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit}>
                         <div className="text-start mb-3">
@@ -79,9 +85,12 @@ export default function Login({ onLoginSuccess }) {
                             <input
                                 type="text"
                                 placeholder="Nhập username"
-                                className="form-control mt-1"
+                                className={`form-control mt-1 ${error ? 'is-invalid' : ''}`}
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                onChange={(e) => {
+                                    setUsername(e.target.value);
+                                    if(error) setError('');
+                                }}
                                 required
                             />
                         </div>
@@ -91,15 +100,25 @@ export default function Login({ onLoginSuccess }) {
                             <input
                                 type="password"
                                 placeholder="Nhập password"
-                                className="form-control mt-1"
+                                className={`form-control mt-1 ${error ? 'is-invalid' : ''}`}
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    if(error) setError(''); 
+                                }}
                                 required
                             />
                         </div>
 
-                        <button type="submit" className="btn btn-primary w-100 mt-2 py-2">
-                            Đăng nhập
+                        <button 
+                            type="submit" 
+                            className="btn btn-primary w-100 mt-2 py-2 fw-bold"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            ) : null}
+                            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
                         </button>
                     </form>
                 </div>
