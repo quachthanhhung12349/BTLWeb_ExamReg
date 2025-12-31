@@ -86,6 +86,7 @@ app.use('/api/admin/courses', courseRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/admin/exam-rooms', examRoomsRouter);
 app.use('/api/course-students', courseStudentsRouter);
+app.use('/api/eligibility', require('./routes/eligibility'));
 
 
 const PORT = process.env.PORT || 5000;

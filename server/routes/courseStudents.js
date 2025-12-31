@@ -2,6 +2,17 @@ const express = require('express');
 const router = express.Router();
 const CourseStudent = require('../models/CourseStudent');
 
+// Thêm vào server/routes/courseStudents.js
+router.get('/all', async (req, res) => {
+    try {
+        // Lấy toàn bộ danh sách để hiển thị mặc định
+        const list = await CourseStudent.find().sort({ createdAt: -1 });
+        res.json({ success: true, list });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // 1. Lấy danh sách sinh viên theo Môn học
 // GET /api/course-students?courseId=INT3306
 router.get('/', async (req, res) => {
