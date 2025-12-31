@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
+const Course = require('../models/Course');
 
 // list
 router.get('/', async (req, res) => {
@@ -29,6 +30,14 @@ router.post('/', async (req, res) => {
           password: studentId || "123456"             
       };
 
+    const availableCourses = await Course.find().limit(5); 
+    
+    const defaultCourses = availableCourses.map(c => ({
+        courseId: c.courseId,
+        courseName: c.name,
+        enrolledDate: new Date()
+    }));
+
     const s = new Student({ 
         studentId, 
         name, 
@@ -36,7 +45,8 @@ router.post('/', async (req, res) => {
         email, 
         birthDate, 
         account: finalAccount, // Lưu vào DB
-        eligibleForExam 
+        eligibleForExam,
+        courses: defaultCourses
     });
     await s.save();
     res.status(201).json(s);

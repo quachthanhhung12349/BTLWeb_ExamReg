@@ -7,7 +7,7 @@ const Exam = require('../models/Exam');
 router.get('/', async (req, res) => {
     try {
         const exams = await Exam.find().sort({ createdAt: -1 });
-        res.json({ success: true, exams });
+        res.json({ success: true, exams }); 
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Lỗi server' });
@@ -18,19 +18,37 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const exam = await Exam.findById(req.params.id);
-        if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
-        res.json({ success: true, exam });
+        if (!exam) return res.status(404).json({ message: 'Không tìm thấy kỳ thi' });
+        
+        const result = exam.toObject();
+
+        if (!result.name && result.examName) {
+            result.name = result.examName;
+        }
+        
+        if (!result.year && result.startDate) {
+            result.year = new Date(result.startDate).getFullYear().toString();
+        }
+
+        res.json(result); 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Lỗi server' });
+        res.status(500).json({ message: 'Lỗi server' });
     }
 });
 
 // POST /api/exams
 router.post('/', async (req, res) => {
-    const { examId, examName, startDate, endDate } = req.body;
+    // Nhận tất cả các trường
+    const { 
+        examId, examName, name, 
+        startDate, endDate, 
+        semester, year, description, status 
+    } = req.body;
 
-    if (!examId || !examName || !startDate || !endDate) {
+    const finalName = name || examName;
+
+    if (!examId || !finalName || !startDate || !endDate) {
         return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc' });
     }
 
@@ -42,9 +60,13 @@ router.post('/', async (req, res) => {
 
         const newExam = new Exam({
             examId,
-            examName,
+            examName: finalName,
             startDate,
             endDate,
+            semester: semester || '1',
+            year: year || new Date(startDate).getFullYear().toString(),
+            description: description || '',
+            status: status || 'active',
             sessions: []
         });
 
@@ -54,6 +76,34 @@ router.post('/', async (req, res) => {
         console.error(error);
         res.status(500).json({ success: false, message: 'Lỗi server' });
     }
+});
+
+// PUT /api/exams/:id
+router.put('/:id', async (req, res) => {
+  try {
+    const { name, semester, year, description, status, startDate, endDate } = req.body;
+    
+    const updateData = {
+        semester,
+        year,
+        description,
+        status,
+        startDate, 
+        endDate
+    };
+    if (name) updateData.examName = name;
+
+    const updatedExam = await Exam.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedExam) return res.status(404).json({ message: 'Không tìm thấy kỳ thi' });
+    res.json(updatedExam);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 // DELETE /api/exams/:id
@@ -75,8 +125,6 @@ router.post('/:id/sessions', async (req, res) => {
         const exam = await Exam.findById(req.params.id);
         if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
 
-        // Ghép ngày + giờ thành đối tượng Date chuẩn
-        // Ví dụ: "2026-01-05T09:00:00"
         const startDateTime = new Date(`${examDate}T${startTime}`);
         const endDateTime = new Date(`${examDate}T${endTime}`);
 
@@ -84,7 +132,6 @@ router.post('/:id/sessions', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Định dạng ngày giờ không hợp lệ' });
         }
 
-        // Nếu roomId là tên phòng (VD: "302-G2"), nó không phải ObjectId -> Gán null
         let validRoomId = null;
         if (roomId && mongoose.Types.ObjectId.isValid(roomId)) {
             validRoomId = roomId;
@@ -93,9 +140,9 @@ router.post('/:id/sessions', async (req, res) => {
         const newSession = {
             course,
             examDate,
-            startTime: startDateTime, // Lưu Date object
-            endTime: endDateTime,     // Lưu Date object
-            roomId: validRoomId       // Lưu ID hoặc null
+            startTime: startDateTime,
+            endTime: endDateTime,
+            roomId: validRoomId
         };
 
         exam.sessions.push(newSession);
@@ -103,7 +150,7 @@ router.post('/:id/sessions', async (req, res) => {
 
         res.json({ success: true, message: 'Thêm ca thi thành công', sessions: exam.sessions });
     } catch (error) {
-        console.error('Lỗi thêm ca thi:', error); // Log lỗi ra terminal
+        console.error('Lỗi thêm ca thi:', error);
         res.status(500).json({ success: false, message: 'Lỗi server: ' + error.message });
     }
 });
@@ -114,7 +161,6 @@ router.delete('/:examId/sessions/:sessionId', async (req, res) => {
         const exam = await Exam.findById(req.params.examId);
         if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
 
-        // Lọc bỏ ca thi có _id trùng với sessionId
         exam.sessions = exam.sessions.filter(s => s._id.toString() !== req.params.sessionId);
         
         await exam.save();
@@ -133,11 +179,9 @@ router.put('/:examId/sessions/:sessionId', async (req, res) => {
         const exam = await Exam.findById(req.params.examId);
         if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
 
-        // Tìm ca thi con trong mảng sessions
         const session = exam.sessions.id(req.params.sessionId);
         if (!session) return res.status(404).json({ success: false, message: 'Không tìm thấy ca thi' });
 
-        // Xử lý ngày giờ (giống lúc thêm mới)
         if (examDate && startTime) {
             session.startTime = new Date(`${examDate}T${startTime}`);
         }
@@ -145,11 +189,9 @@ router.put('/:examId/sessions/:sessionId', async (req, res) => {
             session.endTime = new Date(`${examDate}T${endTime}`);
         }
         
-        // Cập nhật các thông tin khác
         if (course) session.course = course;
         if (examDate) session.examDate = examDate;
         
-        // Chỉ cập nhật roomId nếu có gửi lên và hợp lệ
         if (roomId && mongoose.Types.ObjectId.isValid(roomId)) {
             session.roomId = roomId;
         }

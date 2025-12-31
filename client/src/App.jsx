@@ -22,6 +22,7 @@ import StudentExamRegistrationPage from './student_exam_registration.jsx';
 import StudentCoursesPage from './student_courses.jsx';
 import StudentExamSlipPage from './student_exam_slip.jsx';
 import NotificationDetail from './notification.jsx';
+import ExamEdit from './exam_edit';
 
 import './App.css'
 
@@ -180,11 +181,24 @@ function App() {
         />
 
         <Route
-          path="/admin/exam/:id" // :id là tham số động
+          path="/admin/exam/:id"
           element={
             authed && currentRole === 'admin' ? (
               <LayoutAdmin activeLink="Reports">
                 <ExamDetail />
+              </LayoutAdmin>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/admin/exam/edit/:id"
+          element={
+            authed && currentRole === 'admin' ? (
+              <LayoutAdmin activeLink="Reports">
+                <ExamEdit />
               </LayoutAdmin>
             ) : (
               <Navigate to="/login" replace />

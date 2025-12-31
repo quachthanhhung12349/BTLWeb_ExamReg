@@ -9,11 +9,29 @@ const ExamManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const navigate = useNavigate();
+
+    const getDefaultExamInfo = () => {
+        const today = new Date();
+        const month = today.getMonth() + 1;
+        const year = today.getFullYear();
+
+    if (month >= 8 && month <= 12) {
+            return { semester: '1', year: `${year}-${year + 1}` };
+        } else if (month >= 1 && month <= 5) {
+            return { semester: '2', year: `${year - 1}-${year}` };
+        } else {
+            return { semester: 'Hè', year: `${year - 1}-${year}` };
+        }
+    };
+
+    const defaults = getDefaultExamInfo();
     
     // State form thêm mới
     const [formData, setFormData] = useState({
         examId: '',
         examName: '',
+        semester: defaults.semester,
+        year: defaults.year,
         startDate: '',
         endDate: ''
     });
@@ -74,7 +92,6 @@ const ExamManagement = () => {
                         />
                         <button className="btn btn-outline-secondary" type="button">🔍</button>
                     </div>
-                    {/* Nút mở Modal thêm mới */}
                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                         + Thêm Kỳ thi
                     </button>
@@ -112,7 +129,8 @@ const ExamManagement = () => {
                                                     <span className="badge bg-secondary">{exam.sessions ? exam.sessions.length : 0}</span>
                                                 </td>
                                                 <td className="p-3 text-center">
-                                                    <button className="btn btn-sm btn-outline-primary me-2"onClick={() => navigate(`/admin/exam/${exam._id}`)}>Chi tiết</button>
+                                                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => navigate(`/admin/exam/${exam._id}`)}>Xem</button>
+                                                    <button className="btn btn-warning btn-sm me-2" onClick={() => navigate(`/admin/exam/edit/${exam._id}`)}><i className="bi bi-pencil-square"></i> Sửa</button>
                                                     <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(exam._id)}>🗑</button>
                                                 </td>
                                             </tr>
@@ -148,8 +166,29 @@ const ExamManagement = () => {
                                     <input type="text" className="form-control" 
                                         value={formData.examName} 
                                         onChange={(e) => setFormData({...formData, examName: e.target.value})} 
-                                        placeholder="VD: Kỳ thi hết môn Web"
+                                        placeholder="VD: Kỳ thi Học kỳ 1 Năm học 2023-2024"
                                     />
+                                </div>
+                                <div className="row">
+                                    <div className="col-6 mb-3">
+                                        <label>Năm học</label>
+                                        <input type="text" className="form-control" 
+                                            value={formData.year} 
+                                            onChange={(e) => setFormData({...formData, year: e.target.value})} 
+                                            placeholder="VD: 2023-2024"
+                                        />
+                                    </div>
+                                    <div className="col-6 mb-3">
+                                        <label>Học kỳ</label>
+                                        <select className="form-select"
+                                            value={formData.semester} 
+                                            onChange={(e) => setFormData({...formData, semester: e.target.value})}
+                                        >
+                                            <option value="1">Học kỳ 1</option>
+                                            <option value="2">Học kỳ 2</option>
+                                            <option value="Hè">Học kỳ Hè</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="row">
                                     <div className="col-6 mb-3">
