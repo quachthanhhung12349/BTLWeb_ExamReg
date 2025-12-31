@@ -1,65 +1,61 @@
 import { getApiBase } from './base';
 
-async function apiUrl() {
-    return `${await getApiBase()}/api/course-students`;
-}
+const apiFetch = async (endpoint, options = {}) => {
+    try {
+        const base = await getApiBase();
+        const response = await fetch(`${base}/api${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("API Error:", error);
+        throw error;
+    }
+};
 
-// 1. Lấy danh sách sinh viên theo Mã học phần
+// 1. Lấy danh sách SV theo môn
 export const getStudentsByCourse = async (courseId) => {
-    const response = await fetch(`${await apiUrl()}?courseId=${courseId}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi tải danh sách');
-    return data;
+    return await apiFetch(`/course-students?courseId=${courseId}`);
 };
 
-// 2. Cập nhật trạng thái Đủ điều kiện (Cấm thi / Được thi)
-export const updateCondition = async (id, metCondition) => {
-    const response = await fetch(`${await apiUrl()}/${id}`, {
+// 2. Cập nhật trạng thái
+export const updateCondition = async (id, metCondition, note) => {
+    return await apiFetch(`/course-students/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metCondition })
+        body: JSON.stringify({ metCondition, note })
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi cập nhật');
-    return data;
 };
 
-// 3. (Phụ) Tạo dữ liệu mẫu nhanh (nếu cần test)
+// 3. Tạo dữ liệu mẫu (seed) cho nhanh khi test
 export const seedData = async (studentId, courseId) => {
-    await fetch(`${await apiUrl()}/seed`, {
+    return await apiFetch('/course-students/seed', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId, courseId })
     });
 };
 
 // 4. Lấy danh sách học phần của sinh viên
 export const getCoursesByStudent = async (studentId) => {
-    const response = await fetch(`${await apiUrl()}?studentId=${studentId}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi tải danh sách học phần');
-    return data.list || [];
+    const data = await apiFetch(`/course-students?studentId=${studentId}`);
+    return data.list || (Array.isArray(data) ? data : []);
 };
 
 // 5. Thêm học phần cho sinh viên
 export const addCourseToStudent = async (studentId, courseId) => {
-    const response = await fetch(`${await apiUrl()}`, {
+    return await apiFetch('/course-students', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId, courseId })
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi thêm học phần');
-    return data;
 };
 
 // 6. Xóa học phần của sinh viên
 export const removeCourseFromStudent = async (studentId, courseId) => {
-    const response = await fetch(`${await apiUrl()}?studentId=${studentId}&courseId=${courseId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+    return await apiFetch(`/course-students?studentId=${studentId}&courseId=${courseId}`, {
+        method: 'DELETE'
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi xóa học phần');
-    return data;
 };
