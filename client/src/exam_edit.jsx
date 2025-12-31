@@ -7,15 +7,23 @@ const ExamEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Khởi tạo form rỗng trước khi tải dữ liệu
   const [formData, setFormData] = useState({
     name: '',
     semester: '1',
     year: '',
     description: '',
-    status: 'active'
+    status: 'active',
+    startDate: '',
+    endDate: ''
   });
   const [loading, setLoading] = useState(true);
+
+  const formatForInput = (isoDateString) => {
+    if (!isoDateString) return '';
+    const date = new Date(isoDateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
     const fetchExamData = async () => {
@@ -26,11 +34,13 @@ const ExamEdit = () => {
         if (response.ok) {
           const data = await response.json();
           setFormData({
-            name: data.name || '',
+            name: data.name || data.examName || '',
             semester: data.semester || '1',
             year: data.year || '',
             description: data.description || '',
-            status: data.status || 'active'
+            status: data.status || 'active',
+            startDate: formatForInput(data.startDate),
+            endDate: formatForInput(data.endDate)
           });
         } else {
           alert('Không tìm thấy kỳ thi!');
@@ -38,14 +48,13 @@ const ExamEdit = () => {
       } catch (error) {
         console.error('Lỗi tải dữ liệu:', error);
       } finally {
-        setLoading(false); // Tắt màn hình loading
+        setLoading(false);
       }
     };
 
     fetchExamData();
-  }, [id]); // Chạy 1 lần khi ID thay đổi
+  }, [id]);
 
-  // Xử lý khi bấm nút Lưu
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -58,17 +67,16 @@ const ExamEdit = () => {
 
       if (response.ok) {
         alert('Cập nhật thành công!');
-        // Chuyển hướng về đúng trang danh sách (reports)
         navigate('/admin/reports'); 
       } else {
-        alert('Lỗi cập nhật!');
+        const err = await response.json();
+        alert('Lỗi cập nhật: ' + (err.message || 'Không xác định'));
       }
     } catch (error) {
       console.error('Lỗi gửi form:', error);
     }
   };
 
-  // Xử lý khi gõ phím vào ô input
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -83,21 +91,19 @@ const ExamEdit = () => {
         </div>
         <div className="card-body">
           <form onSubmit={handleSubmit}>
-            {/* Tên kỳ thi */}
             <div className="mb-3">
               <label className="form-label fw-bold">Tên kỳ thi</label>
               <input 
                 type="text" 
                 className="form-control" 
                 name="name" 
-                value={formData.name} // Dữ liệu cũ sẽ hiện ở đây
+                value={formData.name} 
                 onChange={handleChange} 
                 required 
               />
             </div>
 
             <div className="row">
-              {/* Học kỳ */}
               <div className="col-md-6 mb-3">
                 <label className="form-label fw-bold">Học kỳ</label>
                 <select 
@@ -112,7 +118,6 @@ const ExamEdit = () => {
                 </select>
               </div>
               
-              {/* Năm học */}
               <div className="col-md-6 mb-3">
                 <label className="form-label fw-bold">Năm học</label>
                 <input 
@@ -120,6 +125,31 @@ const ExamEdit = () => {
                   className="form-control" 
                   name="year" 
                   value={formData.year} 
+                  onChange={handleChange} 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label fw-bold">Ngày bắt đầu</label>
+                <input 
+                  type="date" 
+                  className="form-control" 
+                  name="startDate" 
+                  value={formData.startDate} 
+                  onChange={handleChange} 
+                  required 
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label fw-bold">Ngày kết thúc</label>
+                <input 
+                  type="date" 
+                  className="form-control" 
+                  name="endDate" 
+                  value={formData.endDate} 
                   onChange={handleChange} 
                   required 
                 />
@@ -161,7 +191,7 @@ const ExamEdit = () => {
               <button 
                 type="button" 
                 className="btn btn-secondary" 
-                onClick={() => navigate('/admin/reports')} // Link về danh sách
+                onClick={() => navigate('/admin/reports')}
               >
                 Hủy
               </button>

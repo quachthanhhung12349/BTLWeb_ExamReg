@@ -32,18 +32,19 @@ const ExamDetail = () => {
         return new Date(dateString).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     };
 
-    // Load dữ liệu ban đầu
     useEffect(() => {
         loadData();
-        loadRooms(); // Tải danh sách phòng thi
+        loadRooms();
     }, []);
 
     const loadData = async () => {
         try {
             const data = await getExamDetail(id);
-            if (data.success) setExam(data.exam);
+            if (data && data.success) { setExam(data.exam); } 
+            else if (data && (data._id || data.examId)) { setExam(data); } 
+            else { console.error("Dữ liệu kỳ thi không hợp lệ:", data);}
         } catch (error) {
-            console.error(error);
+            console.error("Lỗi tải kỳ thi:", error);
         } finally {
             setLoading(false);
         }
@@ -51,7 +52,7 @@ const ExamDetail = () => {
 
     const loadRooms = async () => {
         try {
-            const roomList = await fetchExamRooms(); // Gọi API lấy phòng
+            const roomList = await fetchExamRooms();
             setRooms(roomList || []);
         } catch (error) {
             console.error("Lỗi tải phòng:", error);
@@ -69,7 +70,6 @@ const ExamDetail = () => {
             } else {
                 await addSession(id, sessionForm);
                 alert('Thêm ca thi thành công!');
-                // Reset form giữ lại ngày để nhập tiếp cho tiện
                 setSessionForm(prev => ({ ...prev, course: '', startTime: '', endTime: '' })); 
             }
             loadData();
@@ -89,7 +89,7 @@ const ExamDetail = () => {
             examDate: session.examDate.split('T')[0],
             startTime: formatTimeForInput(session.startTime),
             endTime: formatTimeForInput(session.endTime),
-            roomId: session.roomId || '' // Nếu có ID phòng thì điền vào
+            roomId: session.roomId || '' // Điền id phòng nếu có
         });
     };
 
@@ -112,7 +112,7 @@ const ExamDetail = () => {
         }
     };
 
-    // Helper: Tìm tên phòng dựa vào ID (để hiển thị trong bảng)
+    // Helper hiển thị tên phòng từ ID
     const getRoomName = (id) => {
         const found = rooms.find(r => r._id === id || r.roomId === id);
         return found ? found.roomId : id;
