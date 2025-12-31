@@ -99,6 +99,7 @@ app.use('/api/admin/courses', courseRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/admin/exam-rooms', examRoomsRouter);
 app.use('/api/course-students', courseStudentsRouter);
+app.use('/api/eligibility', require('./routes/eligibility'));
 
 // Global error handler to ensure CORS headers are always sent
 app.use((err, req, res, next) => {

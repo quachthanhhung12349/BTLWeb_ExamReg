@@ -1,35 +1,32 @@
-import { getApiBase } from './base';
+const BASE_URL = 'http://localhost:5001/api'; 
 
-async function apiUrl() {
-    return `${await getApiBase()}/api/course-students`;
-}
+const apiFetch = async (endpoint, options = {}) => {
+    try {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("API Error:", error);
+        throw error;
+    }
+};
 
-// 1. Lấy danh sách sinh viên theo Mã học phần
+// 1. Lấy danh sách SV theo môn
 export const getStudentsByCourse = async (courseId) => {
-    const response = await fetch(`${await apiUrl()}?courseId=${courseId}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi tải danh sách');
-    return data;
+    return await apiFetch(`/course-students?courseId=${courseId}`);
 };
 
-// 2. Cập nhật trạng thái Đủ điều kiện (Cấm thi / Được thi)
-export const updateCondition = async (id, metCondition) => {
-    const response = await fetch(`${await apiUrl()}/${id}`, {
+// 2. Cập nhật trạng thái
+export const updateCondition = async (id, metCondition, note) => {
+    return await apiFetch(`/course-students/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metCondition })
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi cập nhật');
-    return data;
-};
-
-// 3. (Phụ) Tạo dữ liệu mẫu nhanh (nếu cần test)
-export const seedData = async (studentId, courseId) => {
-    await fetch(`${await apiUrl()}/seed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, courseId })
+        body: JSON.stringify({ metCondition, note })
     });
 };
 
