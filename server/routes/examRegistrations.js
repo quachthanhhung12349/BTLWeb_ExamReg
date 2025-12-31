@@ -201,27 +201,43 @@ router.get('/:studentId/view-slips', async (req, res) => {
         if (!student) return res.status(404).json({ message: "Không tìm thấy SV" });
 
         const slips = await Promise.all(student.registeredExams.map(async (reg) => {
-            const exam = await Exam.findById(reg.examId).populate('sessions.roomId');
-            if (!exam) return null;
-            const session = exam.sessions.find(s => s._id.toString() === reg.sessionId.toString());
-            if (!session) return null;
+            try {
+                if (!reg.examId || !reg.sessionId) return null;
+                
+                const exam = await Exam.findById(reg.examId).populate('sessions.roomId');
+                if (!exam) return null;
+                
+                const session = exam.sessions.find(s => s._id && s._id.toString() === reg.sessionId.toString());
+                if (!session) return null;
 
-            const fullCourseName = session.course || "";
-            const cleanName = fullCourseName.split(' - ').pop();
+                const fullCourseName = session.course || "";
+                const cleanName = fullCourseName.split(' - ').pop();
 
-            const seatIdx = session.registeredStudents.findIndex(s => s.studentId.toString() === student._id.toString());
+                let seatIdx = -1;
+                if (session.registeredStudents && Array.isArray(session.registeredStudents) && student._id) {
+                    seatIdx = session.registeredStudents.findIndex(s => {
+                        if (!s || !s.studentId) return false;
+                        return s.studentId.toString() === student._id.toString();
+                    });
+                }
+                
+                if (seatIdx === -1) seatIdx = 0;
 
-            return {
-                regId: reg._id.toString(), 
-                examName: exam.examName,
-                courseName: cleanName,
-                code: reg.courseId,
-                date: new Date(session.examDate).toLocaleDateString('vi-VN'),
-                time: `${new Date(session.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
-                room: session.roomId ? session.roomId.room : "N/A",
-                campus: session.roomId ? session.roomId.campus : "N/A",
-                seat: (seatIdx + 1).toString().padStart(2, '0')
-            };
+                return {
+                    regId: reg._id.toString(), 
+                    examName: exam.examName,
+                    courseName: cleanName,
+                    code: reg.courseId,
+                    date: new Date(session.examDate).toLocaleDateString('vi-VN'),
+                    time: `${new Date(session.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+                    room: session.roomId ? session.roomId.room : "N/A",
+                    campus: session.roomId ? session.roomId.campus : "N/A",
+                    seat: (seatIdx + 1).toString().padStart(2, '0')
+                };
+            } catch (mapErr) {
+                console.error("Error processing exam slip:", mapErr);
+                return null;
+            }
         }));
 
         res.json({
@@ -233,7 +249,10 @@ router.get('/:studentId/view-slips', async (req, res) => {
             },
             registeredExams: slips.filter(s => s !== null)
         });
-    } catch (e) { res.status(500).json({ message: e.message }); }
+    } catch (e) { 
+        console.error("Error in view-slips:", e);
+        res.status(500).json({ message: e.message }); 
+    }
 });
 
 // [GET] /api/exam-registrations/:regId/download-info

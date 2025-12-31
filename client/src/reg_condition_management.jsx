@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStudentsByCourse, updateCondition, seedData } from './api/courseStudent_api';
+import { exportTableToExcel } from './utils/excelExport';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -77,6 +78,48 @@ const RegConditionManagement = () => {
         }
     };
 
+    // Xuất Excel danh sách sinh viên đủ điều kiện
+    const handleExportExcel = async () => {
+        if (students.length === 0) {
+            alert('Không có dữ liệu để xuất!');
+            return;
+        }
+
+        try {
+            // Fetch all students to get their details (name, birthday, class)
+            const { fetchStudents } = await import('./api/student_api.jsx');
+            const allStudentsData = await fetchStudents();
+
+            const columns = [
+                { header: 'STT', key: 'index', width: 8 },
+                { header: 'Mã sinh viên', key: 'studentId', width: 20 },
+                { header: 'Họ tên', key: 'name', width: 35 },
+                { header: 'Ngày sinh', key: 'birthday', width: 22 },
+                { header: 'Lớp', key: 'class', width: 20 },
+                { header: 'Ký tên', key: 'signature', width: 20 }
+            ];
+
+            const tableData = students.map((s, index) => {
+                const studentDetail = allStudentsData.find(sd => sd.studentId === s.studentId);
+                return {
+                    index: (index + 1).toString(),
+                    studentId: s.studentId,
+                    name: studentDetail?.name || '-',
+                    birthday: studentDetail?.birthday 
+                        ? new Date(studentDetail.birthday).toLocaleDateString('vi-VN')
+                        : '-',
+                    class: studentDetail?.class || '-',
+                    signature: ''
+                };
+            });
+
+            const filename = `DanhSachDieuKienDuThi_${new Date().toISOString().split('T')[0]}.xlsx`;
+            exportTableToExcel(tableData, columns, filename, 'Danh sách', 'Danh Sách Sinh Viên Điều Kiện Dự Thi');
+        } catch (error) {
+            alert('Lỗi: ' + error.message);
+        }
+    };
+
     // --- LOGIC PHÂN TRANG (Client-side pagination) ---
     const total = students.length;
     const startIndex = currentPage * PAGE_SIZE;
@@ -117,10 +160,15 @@ const RegConditionManagement = () => {
                         </button>
                     </div>
 
-                    {/* Nút Test Data */}
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={handleTestSeed}>
-                        + Test Data
-                    </button>
+                    {/* Nút Test Data và Xuất Excel */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button className="btn btn-primary" onClick={handleExportExcel} disabled={students.length === 0}>
+                            📄 Xuất Excel
+                        </button>
+                        <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={handleTestSeed}>
+                            + Test Data
+                        </button>
+                    </div>
                 </div>
             </div>
 

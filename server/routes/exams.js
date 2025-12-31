@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const exam = await Exam.findById(req.params.id);
-        if (!exam) return res.status(404).json({ message: 'Không tìm thấy kỳ thi' });
+        if (!exam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
         
         const result = exam.toObject();
 
@@ -30,10 +30,10 @@ router.get('/:id', async (req, res) => {
             result.year = new Date(result.startDate).getFullYear().toString();
         }
 
-        res.json(result); 
+        res.json({ success: true, exam: result }); 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ success: false, message: 'Lỗi server' });
     }
 });
 

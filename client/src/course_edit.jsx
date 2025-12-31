@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { fetchCourse, updateCourse } from './api/course_api.jsx';
 import { fetchStudents } from './api/student_api.jsx';
 import { getStudentsByCourse, addCourseToStudent, removeCourseFromStudent } from './api/courseStudent_api.jsx';
+import { exportTableToExcel } from './utils/excelExport';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const CourseEdit = () => {
@@ -154,6 +155,45 @@ const CourseEdit = () => {
     }
   };
 
+  // Xuất Excel danh sách sinh viên đang học
+  const handleExportStudents = async () => {
+    if (courseStudentsDetails.length === 0) {
+      alert('Không có sinh viên nào để xuất!');
+      return;
+    }
+
+    try {
+      const columns = [
+        { header: 'STT', key: 'index', width: 8 },
+        { header: 'Mã sinh viên', key: 'studentId', width: 20 },
+        { header: 'Họ tên', key: 'name', width: 35 },
+        { header: 'Ngày sinh', key: 'birthday', width: 22 },
+        { header: 'Lớp', key: 'class', width: 20 }
+      ];
+
+      const tableData = courseStudentsDetails.map((s, index) => ({
+        index: (index + 1).toString(),
+        studentId: s.studentId || '-',
+        name: s.name || '-',
+        birthday: s.birthday 
+          ? new Date(s.birthday).toLocaleDateString('vi-VN')
+          : '-',
+        class: s.class || '-'
+      }));
+
+      const filename = `DanhSachSinhVien_${courseId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      exportTableToExcel(
+        tableData, 
+        columns, 
+        filename,
+        'Danh sách sinh viên',
+        `Danh Sách Sinh Viên Học Phần: ${courseId} - ${courseName}`
+      );
+    } catch (error) {
+      alert('Lỗi: ' + error.message);
+    }
+  };
+
 
   return (
     <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -191,6 +231,14 @@ const CourseEdit = () => {
                     disabled={loading}
                   >
                     + Thêm sinh viên
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-success"
+                    onClick={handleExportStudents}
+                    disabled={courseStudentsDetails.length === 0}
+                  >
+                    � Xuất Excel
                   </button>
                 </div>
                 {courseStudentsDetails.length > 0 && (
