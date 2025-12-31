@@ -102,7 +102,7 @@ async function seed() {
         class: classes[i % classes.length],
         email: `${studentId}@vnu.edu.vn`,
         birthDate: randomDate(new Date(2002, 0, 1), new Date(2006, 0, 1)),
-        account: { username: studentId, password: 'hashed_password_here', role: 'Student', lastLogin: randomDate() },
+        account: { username: studentId, password: studentId, role: 'Student', lastLogin: randomDate() },
         eligibleForExam: true,
         notifications,
         registeredExams: [],
