@@ -166,6 +166,18 @@ const StudentEdit = () => {
       // Refresh student courses
       const updatedCourses = await getCoursesByStudent(studentId);
       setStudentCourses(updatedCourses || []);
+      // Update course details shown in the UI so changes appear immediately
+      try {
+        const allCoursesData = (allCourses && allCourses.length) ? allCourses : await fetchCourses();
+        const detailedCourses = (updatedCourses || []).map(sc => {
+          const courseDetail = allCoursesData.find(c => c.courseId === sc.courseId);
+          return courseDetail || { courseId: sc.courseId, courseName: sc.courseId };
+        });
+        setStudentCoursesDetails(detailedCourses);
+      } catch (err) {
+        console.error('Failed to refresh course details after save:', err);
+        setStudentCoursesDetails((updatedCourses || []).map(sc => ({ courseId: sc.courseId, courseName: sc.courseId })));
+      }
       closeCourseModal();
     } catch (err) {
       alert('Lỗi cập nhật học phần: ' + err.message);
