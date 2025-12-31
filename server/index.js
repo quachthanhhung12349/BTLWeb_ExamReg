@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -113,6 +113,10 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
+console.log('📍 Environment Variables Check:');
+console.log('   MONGO_URI:', MONGO_URI ? '✅ Set' : '❌ Not set');
+console.log('   PORT:', PORT);
+
 // Initialize MongoDB connection
 if (MONGO_URI) {
     mongoose.connect(MONGO_URI)
@@ -123,7 +127,7 @@ if (MONGO_URI) {
             console.error('❌ Lỗi kết nối MongoDB:', err.message);
         });
 } else {
-    console.warn('⚠️ MONGO_URI not set - MongoDB connection skipped');
+    console.error('❌ MONGO_URI không được cấu hình - Hãy kiểm tra file .env');
 }
 
 // Start server only in non-Vercel environment
