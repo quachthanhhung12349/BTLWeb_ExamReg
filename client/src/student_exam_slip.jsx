@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
+import { getApiBase } from "./api/base";
 
 const ExamSlipPage = ({ onLogout }) => {
   const [studentData, setStudentData] = useState(null);
@@ -14,14 +15,14 @@ const ExamSlipPage = ({ onLogout }) => {
   const slipRef = useRef();
 
   const studentId = localStorage.getItem("studentId");
-  const API_BASE_URL = "http://localhost:5000/api/exam-registrations";
 
   useEffect(() => {
     const fetchExamSlips = async () => {
       if (!studentId) return;
       try {
         setLoading(true);
-        const res = await axios.get(`${API_BASE_URL}/${studentId}/view-slips`);
+        const baseUrl = await getApiBase();
+        const res = await axios.get(`${baseUrl}/api/exam-registrations/${studentId}/view-slips`);
         setStudentData(res.data.studentInfo);
         setRegisteredExams(res.data.registeredExams);
         if (res.data.registeredExams.length > 0) {
@@ -38,13 +39,15 @@ const ExamSlipPage = ({ onLogout }) => {
 
   const handleDownloadPDF = async (regId) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/${regId}/download-info`);
-      console.log("Xác nhận dữ liệu từ server:", res.data);
+      const baseUrl = await getApiBase();
+      const res = await axios.get(`${baseUrl}/api/exam-registrations/${regId}/download-info`);
+      console.log("Dữ liệu từ server:", res.data);
 
       const element = slipRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2, 
-        useCORS: true
+        scale: 2,
+        useCORS: true,
+        logging: false
       });
       const imgData = canvas.toDataURL("image/png");
 
@@ -55,7 +58,8 @@ const ExamSlipPage = ({ onLogout }) => {
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
       pdf.save(`PhieuBao_${studentId}_${selectedExam.code}.pdf`);
     } catch (err) {
-      alert("Lỗi khi tải file PDF");
+      console.error(err);
+      alert("Lỗi khi tải file PDF. Hãy kiểm tra kết nối Server.");
     }
   };
 
@@ -111,7 +115,7 @@ const ExamSlipPage = ({ onLogout }) => {
 
       <main className="flex-grow-1 p-4 overflow-auto main-content">
         <div className="d-print-none">
-          <HeaderStudent title="Phiếu báo dự thi" subTitle="Thông tin chi tiết" notificationCount={3} />
+          <HeaderStudent title="Phiếu báo dự thi" subTitle="Thông tin chi tiết" />
         </div>
 
         {loading ? (
@@ -178,6 +182,17 @@ const ExamSlipPage = ({ onLogout }) => {
                   </div>
 
                   <div className="col-12 my-3"><hr className="opacity-10" /></div>
+
+                  <div className="mb-4 ps-2">
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <label className="text-muted small fw-bold text-uppercase">Học phần dự thi</label>
+                        <div className="fw-bold fs-4 text-dark">
+                          {selectedExam.code} - {selectedExam.courseName}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="row g-4 mt-2">
                     <div className="col-md-6">
