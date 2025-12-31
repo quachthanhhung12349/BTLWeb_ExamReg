@@ -152,8 +152,8 @@ const ExamManagement = () => {
                                             <tr key={exam._id}>
                                                 <td className="p-3 fw-bold text-primary">{exam.examId}</td>
                                                 <td className="p-3">{exam.examName}</td>
-                                                <td className="p-3">{new Date(exam.startDate).toLocaleDateString('vi-VN')}</td>
-                                                <td className="p-3">{new Date(exam.endDate).toLocaleDateString('vi-VN')}</td>
+                                                <td className="p-3">{new Date(exam.startDate).toLocaleDateString('en-GB')}</td>
+                                                <td className="p-3">{new Date(exam.endDate).toLocaleDateString('en-GB')}</td>
                                                 <td className="p-3 text-center">
                                                     <span className="badge bg-secondary">{exam.sessions ? exam.sessions.length : 0}</span>
                                                 </td>
