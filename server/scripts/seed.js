@@ -84,7 +84,7 @@ async function seed() {
     const studentDocs = [];
     for (let i = 0; i < 200; i++) {
       const studentObjectId = new mongoose.Types.ObjectId();
-      const studentId = `230217${String(i + 1).padStart(2, '0')}`;
+      const studentId = (23021700 + i + 1).toString();
       const name = `${randomElement(firstNames)} ${randomElement(lastNames)}`;
       
       const numCourses = 7 + Math.floor(Math.random() * 3);
