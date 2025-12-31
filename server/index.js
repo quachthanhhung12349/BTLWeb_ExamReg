@@ -113,7 +113,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// For Vercel serverless, we need to handle MongoDB connection differently
+// Initialize MongoDB connection
 if (MONGO_URI) {
     mongoose.connect(MONGO_URI)
         .then(() => {
@@ -126,26 +126,12 @@ if (MONGO_URI) {
     console.warn('⚠️ MONGO_URI not set - MongoDB connection skipped');
 }
 
-// For Vercel, export the app instead of listening
-if (process.env.VERCEL) {
-    module.exports = app;
-} else {
-    // Local development
-    if (MONGO_URI) {
-        mongoose.connect(MONGO_URI)
-            .then(() => {
-                console.log('✅ Kết nối MongoDB thành công');
-                app.listen(PORT, () => {
-                    console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
-                });
-            })
-            .catch(err => {
-                console.error('❌ Lỗi kết nối MongoDB:', err.message);
-                process.exit(1);
-            });
-    } else {
-        app.listen(PORT, () => {
-            console.log(`🚀 Server đang chạy tại: http://localhost:${PORT} (No DB)`);
-        });
-    }
+// Start server only in non-Vercel environment
+if (!process.env.VERCEL && require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
+    });
 }
+
+// Export for Vercel serverless
+module.exports = app;
