@@ -15,6 +15,8 @@ const Student = require('./models/Student');
 const examRegistrationRouter = require('./routes/examRegistrations'); 
 const examSessionRouter = require('./routes/examSessions');
 const courseStudentsRouter = require('./routes/courseStudents');
+const auditLogger = require('./middleware/auditLogger');
+const logsRouter = require('./routes/logs');
 
 const app = express();
 
@@ -34,6 +36,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(auditLogger);
 
 // --- HEALTH CHECK ---
 app.get('/api/health', (_req, res) => {
@@ -100,6 +103,7 @@ app.use('/api/exams', examsRouter);
 app.use('/api/admin/exam-rooms', examRoomsRouter);
 app.use('/api/course-students', courseStudentsRouter);
 app.use('/api/eligibility', require('./routes/eligibility'));
+app.use('/api/admin/logs', logsRouter);
 
 // Global error handler to ensure CORS headers are always sent
 app.use((err, req, res, next) => {
