@@ -75,8 +75,8 @@ const SidebarAdmin = ({ activeLink }) => {
                 <li className="nav-item">
                     <Link
                         to="/admin/reports"
-                        className={`nav-link d-flex align-items-center ${isActive("/admin/reports") ? "active shadow-sm" : "text-dark"}`}
-                        style={isActive("/admin/reports") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
+                        className={`nav-link d-flex align-items-center ${activeLink === 'Reports' ? "active shadow-sm" : "text-dark"}`}
+                        style={activeLink === 'Reports' ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
                     >
                         <i className="bi bi-file-earmark-text me-3"></i>
                         Quản lý kỳ thi
