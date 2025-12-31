@@ -4,6 +4,10 @@ import { fetchStudents } from './api/student_api.jsx';
 import { exportTableToExcel } from './utils/excelExport';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+/**
+ * Component Quan ly dieu kien du thi.
+ * @returns {JSX.Element}
+ */
 const RegConditionManagement = () => {
     const [courses, setCourses] = useState([]);
     // abcxyz abcxyz

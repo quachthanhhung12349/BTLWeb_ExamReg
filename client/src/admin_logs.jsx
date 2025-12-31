@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getSystemLogs } from './api/log_api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+/**
+ * Hien thi trang nhat ky he thong cho admin
+ * @returns {JSX.Element}
+ */
 const AdminLogs = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);

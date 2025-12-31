@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { getApiBase } from './api/base';
 
+/**
+ * Component chinh sua ky thi.
+ * @returns {JSX.Element}
+ */
 const ExamEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();

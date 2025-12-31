@@ -4,6 +4,10 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { getExams, createExam, deleteExam } from './api/exam_api';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * Component quan ly ky thi.
+ * @returns {JSX.Element}
+ */
 const ExamManagement = () => {
     const [exams, setExams] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');

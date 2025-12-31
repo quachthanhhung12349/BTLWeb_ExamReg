@@ -1,26 +1,26 @@
 const AuditLog = require('../models/AuditLog');
 
 const auditLogger = async (req, res, next) => {
-    // Chỉ ghi log các hành động thay đổi dữ liệu (bỏ qua GET để đỡ rác DB)
+    // Chi log khi thay doi du lieu (khong phai GET)
     if (req.method === 'GET') {
         return next();
     }
 
-    // Lưu lại hàm send gốc để lấy được status code sau khi xử lý xong
+    // Luu lai ham send goc de goi sau
     const originalSend = res.send;
 
     res.send = function (data) {
-        // Khôi phục hàm send gốc để phản hồi cho client
+        // Khoi phuc ham send goc de gui phan hoi
         originalSend.apply(res, arguments);
 
-        // Sau khi phản hồi xong thì tiến hành ghi log (chạy ngầm)
+        // Ghi log sau khi phan hoi da duoc gui
         const logEntry = new AuditLog({
             method: req.method,
             path: req.originalUrl,
             action: `Thực hiện ${req.method} tại ${req.originalUrl}`,
-            // Nếu bạn có middleware xác thực user thì thay 'Admin' bằng req.user.name
+            // Tham dinh nguoi dung la Admin/User neu khong co thong tin dang nhap
             user: req.body.username || 'Admin/User', 
-            details: req.body, // Lưu lại dữ liệu client gửi lên
+            details: req.body,
             status: res.statusCode
         });
 
