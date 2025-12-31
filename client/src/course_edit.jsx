@@ -175,8 +175,8 @@ const CourseEdit = () => {
         index: (index + 1).toString(),
         studentId: s.studentId || '-',
         name: s.name || '-',
-        birthday: s.birthday 
-          ? new Date(s.birthday).toLocaleDateString('vi-VN')
+        birthday: (s.birthDate || s.birthday)
+          ? new Date(s.birthDate || s.birthday).toLocaleDateString('vi-VN')
           : '-',
         class: s.class || '-'
       }));

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStudentsByCourse, updateCondition, seedData } from './api/courseStudent_api';
+import { fetchStudents } from './api/student_api.jsx';
 import { exportTableToExcel } from './utils/excelExport';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -11,6 +12,28 @@ const RegConditionManagement = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(0);
+    const PAGE_SIZE = 10;
+    const [studentMap, setStudentMap] = useState({});
+
+    // Fetch student directory once so we can attach names to course-student rows
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const all = await fetchStudents();
+                if (!mounted) return;
+                const map = {};
+                (Array.isArray(all) ? all : []).forEach((s) => {
+                    if (s && s.studentId) map[s.studentId] = s;
+                });
+                setStudentMap(map);
+            } catch (err) {
+                console.error('Failed to preload students:', err);
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
 
     // 1. Lấy danh sách môn học
     useEffect(() => {
@@ -42,7 +65,11 @@ const RegConditionManagement = () => {
             try {
                 const data = await getStudentsByCourse(selectedCourse);
                 const list = data.success ? data.list : (Array.isArray(data) ? data : []);
-                setStudents(list);
+                const withNames = list.map((item) => ({
+                    ...item,
+                    studentName: item.studentName || studentMap[item.studentId]?.name || '---'
+                }));
+                setStudents(withNames);
             } catch (err) {
                 setStudents([]);
             } finally {
@@ -50,7 +77,12 @@ const RegConditionManagement = () => {
             }
         };
         loadStudents();
-    }, [selectedCourse]);
+    }, [selectedCourse, studentMap]);
+
+    // Reset về trang đầu khi đổi bộ lọc
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [searchTerm, selectedCourse]);
 
     // 3. Xử lý Cấm thi / Cho phép
     const handleToggle = async (student) => {
@@ -103,8 +135,8 @@ const RegConditionManagement = () => {
                     index: (index + 1).toString(),
                     studentId: s.studentId,
                     name: studentDetail?.name || '-',
-                    birthday: studentDetail?.birthday 
-                        ? new Date(studentDetail.birthday).toLocaleDateString('vi-VN')
+                    birthday: (studentDetail?.birthDate || studentDetail?.birthday)
+                        ? new Date(studentDetail.birthDate || studentDetail.birthday).toLocaleDateString('vi-VN')
                         : '-',
                     class: studentDetail?.class || '-',
                     signature: ''
@@ -118,11 +150,31 @@ const RegConditionManagement = () => {
         }
     };
 
+    const normalize = (str) => {
+        if (!str) return '';
+        return String(str)
+            .normalize('NFD')
+            .replace(/[^\p{ASCII}]/gu, '')
+            .toLowerCase();
+    };
+
+    const filtered = students.filter((s) => {
+        if (!s) return false;
+        if (!searchTerm) return true;
+        const q = normalize(searchTerm);
+        return normalize(s.studentId).includes(q) || normalize(s.studentName).includes(q);
+    });
+
     // --- LOGIC PHÂN TRANG (Client-side pagination) ---
-    const total = students.length;
+    useEffect(() => {
+        const maxPage = Math.max(0, Math.ceil(filtered.length / PAGE_SIZE) - 1);
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+    }, [filtered.length, currentPage]);
+
+    const total = filtered.length;
     const startIndex = currentPage * PAGE_SIZE;
     const endIndex = Math.min(startIndex + PAGE_SIZE, total);
-    const paginatedStudents = students.slice(startIndex, endIndex);
+    const paginatedStudents = filtered.slice(startIndex, endIndex);
 
     const prevPage = () => setCurrentPage(p => Math.max(0, p - 1));
     const nextPage = () => {
@@ -203,7 +255,7 @@ const RegConditionManagement = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filtered.length > 0 ? filtered.map((s) => (
+                                        {paginatedStudents.length > 0 ? paginatedStudents.map((s) => (
                                             <tr key={s._id} className={!s.metCondition ? "table-danger" : ""}>
                                                 <td className="p-3 fw-bold">{s.studentId}</td>
                                                 <td className="p-3">{s.studentName || '---'}</td>

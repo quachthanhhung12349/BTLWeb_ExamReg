@@ -1,8 +1,9 @@
-const BASE_URL = 'http://localhost:5001/api'; 
+import { getApiBase } from './base';
 
 const apiFetch = async (endpoint, options = {}) => {
     try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+        const base = await getApiBase();
+        const response = await fetch(`${base}/api${endpoint}`, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -30,33 +31,31 @@ export const updateCondition = async (id, metCondition, note) => {
     });
 };
 
+// 3. Tạo dữ liệu mẫu (seed) cho nhanh khi test
+export const seedData = async (studentId, courseId) => {
+    return await apiFetch('/course-students/seed', {
+        method: 'POST',
+        body: JSON.stringify({ studentId, courseId })
+    });
+};
+
 // 4. Lấy danh sách học phần của sinh viên
 export const getCoursesByStudent = async (studentId) => {
-    const response = await fetch(`${await apiUrl()}?studentId=${studentId}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi tải danh sách học phần');
-    return data.list || [];
+    const data = await apiFetch(`/course-students?studentId=${studentId}`);
+    return data.list || (Array.isArray(data) ? data : []);
 };
 
 // 5. Thêm học phần cho sinh viên
 export const addCourseToStudent = async (studentId, courseId) => {
-    const response = await fetch(`${await apiUrl()}`, {
+    return await apiFetch('/course-students', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId, courseId })
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi thêm học phần');
-    return data;
 };
 
 // 6. Xóa học phần của sinh viên
 export const removeCourseFromStudent = async (studentId, courseId) => {
-    const response = await fetch(`${await apiUrl()}?studentId=${studentId}&courseId=${courseId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+    return await apiFetch(`/course-students?studentId=${studentId}&courseId=${courseId}`, {
+        method: 'DELETE'
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Lỗi xóa học phần');
-    return data;
 };
