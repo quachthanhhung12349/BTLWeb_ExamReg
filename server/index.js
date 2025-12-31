@@ -100,17 +100,52 @@ app.use('/api/exams', examsRouter);
 app.use('/api/admin/exam-rooms', examRoomsRouter);
 app.use('/api/course-students', courseStudentsRouter);
 
+// Global error handler to ensure CORS headers are always sent
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI)
-    .then(() => {
-        console.log('✅ Kết nối MongoDB thành công');
-        app.listen(PORT, () => {
-            console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
+// For Vercel serverless, we need to handle MongoDB connection differently
+if (MONGO_URI) {
+    mongoose.connect(MONGO_URI)
+        .then(() => {
+            console.log('✅ Kết nối MongoDB thành công');
+        })
+        .catch(err => {
+            console.error('❌ Lỗi kết nối MongoDB:', err.message);
         });
-    })
-    .catch(err => {
-        console.error('❌ Lỗi kết nối MongoDB:', err.message);
-    });
+} else {
+    console.warn('⚠️ MONGO_URI not set - MongoDB connection skipped');
+}
+
+// For Vercel, export the app instead of listening
+if (process.env.VERCEL) {
+    module.exports = app;
+} else {
+    // Local development
+    if (MONGO_URI) {
+        mongoose.connect(MONGO_URI)
+            .then(() => {
+                console.log('✅ Kết nối MongoDB thành công');
+                app.listen(PORT, () => {
+                    console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
+                });
+            })
+            .catch(err => {
+                console.error('❌ Lỗi kết nối MongoDB:', err.message);
+                process.exit(1);
+            });
+    } else {
+        app.listen(PORT, () => {
+            console.log(`🚀 Server đang chạy tại: http://localhost:${PORT} (No DB)`);
+        });
+    }
+}
