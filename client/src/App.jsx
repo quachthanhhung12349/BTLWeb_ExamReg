@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import LayoutAdmin from './layout_admin.jsx';
 import Login from './Login.jsx';
