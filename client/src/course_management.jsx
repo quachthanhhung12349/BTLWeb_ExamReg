@@ -10,12 +10,30 @@ const CourseManagement = () => {
     const [courses, setCourses] = useState([]);
     const navigate = useNavigate();
 
+    const removeAccents = (str) => {
+        if (!str) return "";
+        // Ép kiểu String(str) để đảm bảo không lỗi nếu str là số
+        return String(str).normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/đ/g, "d")
+                  .replace(/Đ/g, "D")
+                  .toLowerCase(); 
+    };
+
     useEffect(() => {
         let mounted = true;
         (async () => {
             try {
                 const data = await fetchCourses();
-                if (mounted) setCourses(data || []);
+                if (mounted) {
+                    if (Array.isArray(data)) {
+                        setCourses(data);
+                    } else if (data && data.courses && Array.isArray(data.courses)) {
+                        setCourses(data.courses);
+                    } else {
+                        setCourses([]);
+                    }
+                }
             } catch (err) { 
                 console.error('Failed to fetch courses:', err);
                 if (mounted) setCourses([]);
@@ -101,6 +119,20 @@ const CourseManagement = () => {
         setCurrentPage(0);
     }, [searchTerm]);
 
+    const safeCourses = Array.isArray(courses) ? courses : [];
+
+    const filteredCourses = safeCourses.filter(s => {
+        if (!s) return false;
+
+        if (!searchTerm) return true;
+        
+        const q = removeAccents(searchTerm);
+        const id = removeAccents(s.courseId);
+        const name = removeAccents(s.courseName);
+        
+        return id.includes(q) || name.includes(q);
+    });
+
     useEffect(() => {
         const q = (searchTerm || '').toLowerCase();
         const filteredCount = courses.filter(s => {
@@ -114,14 +146,14 @@ const CourseManagement = () => {
         if (currentPage > maxPage) setCurrentPage(maxPage);
     }, [courses, searchTerm, currentPage]);
 
-    const filteredCourses = courses.filter(s => {
-        if (!searchTerm) return true;
-        const q = searchTerm.toLowerCase();
-        return (
-            (s.courseId || '').toLowerCase().includes(q) ||
-            (s.courseName || '').toLowerCase().includes(q)
-        );
-    });
+    // const filteredCourses = courses.filter(s => {
+    //     if (!searchTerm) return true;
+    //     const q = searchTerm.toLowerCase();
+    //     return (
+    //         (s.courseId || '').toLowerCase().includes(q) ||
+    //         (s.courseName || '').toLowerCase().includes(q)
+    //     );
+    // });
 
     const total = filteredCourses.length;
     const startIndex = currentPage * PAGE_SIZE;

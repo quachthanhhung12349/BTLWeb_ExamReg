@@ -10,6 +10,15 @@ const ExamManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const navigate = useNavigate();
 
+    const removeAccents = (str) => {
+        if (!str) return "";
+        return String(str).normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/đ/g, "d")
+                  .replace(/Đ/g, "D")
+                  .toLowerCase(); 
+    };
+
     const getDefaultExamInfo = () => {
         const today = new Date();
         const month = today.getMonth() + 1;
@@ -44,11 +53,31 @@ const ExamManagement = () => {
     const fetchExams = async () => {
         try {
             const data = await getExams();
-            if (data.success) setExams(data.exams);
+            // Kiểm tra dữ liệu an toàn
+            if (data.success && Array.isArray(data.exams)) {
+                setExams(data.exams);
+            } else if (Array.isArray(data)) {
+                setExams(data);
+            } else {
+                setExams([]);
+            }
         } catch (error) {
             console.error('Lỗi tải dữ liệu:', error);
         }
     };
+
+    const safeExams = Array.isArray(exams) ? exams : [];
+
+    const filteredExams = safeExams.filter(e => {
+        if (!searchTerm) return true;
+        
+        const q = removeAccents(searchTerm);
+        
+        const name = removeAccents(e.examName || e.name);
+        const id = removeAccents(e.examId);
+        
+        return name.includes(q) || id.includes(q);
+    });
 
     // 2. Xử lý thêm mới
     const handleCreate = async () => {
@@ -123,8 +152,8 @@ const ExamManagement = () => {
                                             <tr key={exam._id}>
                                                 <td className="p-3 fw-bold text-primary">{exam.examId}</td>
                                                 <td className="p-3">{exam.examName}</td>
-                                                <td className="p-3">{new Date(exam.startDate).toLocaleDateString('vi-VN')}</td>
-                                                <td className="p-3">{new Date(exam.endDate).toLocaleDateString('vi-VN')}</td>
+                                                <td className="p-3">{new Date(exam.startDate).toLocaleDateString('en-GB')}</td>
+                                                <td className="p-3">{new Date(exam.endDate).toLocaleDateString('en-GB')}</td>
                                                 <td className="p-3 text-center">
                                                     <span className="badge bg-secondary">{exam.sessions ? exam.sessions.length : 0}</span>
                                                 </td>
