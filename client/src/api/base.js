@@ -2,7 +2,7 @@
 const candidates = (
   import.meta.env.VITE_API_BASE
     ? [import.meta.env.VITE_API_BASE, 'http://localhost:5001', 'http://localhost:5000']
-    : ['http://localhost:5001', 'http://localhost:5000']
+    : ['https://btl-web-exam-reg-backend-jfpbivud0.vercel.app', 'http://localhost:5001', 'http://localhost:5000']
 ).map((url) => url.replace(/\/$/, ''));
 
 let resolvedBase = null;
