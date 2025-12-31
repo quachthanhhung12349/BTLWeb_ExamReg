@@ -3,9 +3,9 @@ const { Schema } = mongoose;
 
 const ExamRoomSchema = new Schema({
   roomId: { type: String, required: true, unique: true, index: true },
-  campus: String,
-  room: String, // room name/number
-  maxStudents: Number
+  location: { type: String, required: true },
+  capacity: { type: Number, required: true },
+  status: { type: String, enum: ['available', 'maintenance', 'occupied'], default: 'available' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('ExamRoom', ExamRoomSchema, 'exam_rooms');
