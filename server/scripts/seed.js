@@ -1,4 +1,5 @@
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 
 const firstNames = ['Lý', 'Trần', 'Nguyễn', 'Hoàng', 'Võ', 'Phan', 'Đặng', 'Bùi', 'Đinh', 'Phạm', 'Lê', 'Đỗ', 'Hồ', 'Ngô'];
