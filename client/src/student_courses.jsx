@@ -4,6 +4,9 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Sidebar from "./sidebar_student.jsx";
 import HeaderStudent from "./student_header.jsx";
+import autoTable from "jspdf-autotable";
+import { robotoBase64 } from "./fonts/Roboto-Regular-Base64.js";
+
 import { getApiBase } from "./api/base";
 
 const CourseListPage = ({ onLogout }) => {
@@ -14,7 +17,7 @@ const CourseListPage = ({ onLogout }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   const pdfExportRef = useRef(null);
-  
+
   const examRegUrl = async (suffix = "") => {
     return `${await getApiBase()}/api/exam-registrations${suffix}`;
   };
@@ -46,28 +49,81 @@ const CourseListPage = ({ onLogout }) => {
   const handleDownloadPDF = async () => {
     try {
       const res = await axios.get(await examRegUrl('/subjects'));
-      setReportData(res.data); 
+      const data = res.data;
 
-      setTimeout(async () => {
-        const element = pdfExportRef.current;
-        if (!element) return;
-        element.style.display = "block";
+      const doc = new jsPDF("l", "mm", "a4");
 
-        const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("l", "mm", "a4");
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      // 1. NHÚNG FONT VÀ SET LÀM MẶC ĐỊNH NGAY LẬP TỨC
+      doc.addFileToVFS("Roboto-Regular.ttf", robotoBase64);
+      doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+      doc.addFont("Roboto-Regular.ttf", "Roboto", "bold"); // Có thể dùng cùng 1 file font nếu bạn không có file Bold riêng
+      doc.setFont("Roboto", "normal"); // Quan trọng: Set font mặc định cho toàn bộ doc
 
-        pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
-        pdf.save("Danh_sach_mon_phai_thi.pdf");
-        element.style.display = "none";
-      }, 600);
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // 2. PHẦN TIÊU ĐỀ (Chỉ xuất hiện ở trang 1)
+      doc.setFontSize(11);
+      doc.text("ĐẠI HỌC QUỐC GIA HÀ NỘI", 45, 15, { align: "center" });
+      doc.text("TRƯỜNG ĐẠI HỌC CÔNG NGHỆ", 45, 21, { align: "center" });
+
+      doc.text("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", pageWidth - 70, 15, { align: "center" });
+      doc.setFontSize(10);
+      doc.text("Độc lập - Tự do - Hạnh phúc", pageWidth - 70, 21, { align: "center" });
+      doc.text("-----------------------", pageWidth - 70, 24, { align: "center" });
+
+      doc.setFontSize(20);
+      doc.text("DANH SÁCH MÔN PHẢI THI", pageWidth / 2, 38, { align: "center" });
+
+      doc.setFontSize(10);
+      doc.text(`Ngày tải: ${new Date().toLocaleDateString('vi-VN')}`, pageWidth / 2, 45, { align: "center" });
+
+      // 3. VẼ BẢNG
+      autoTable(doc, {
+        startY: 52,
+        head: [['STT', 'Mã môn', 'Tên môn học', 'STC', 'Giảng viên', 'Sĩ số', 'Giờ thi', 'Ngày thi', 'Phòng thi']],
+        body: data.map((item, idx) => [
+          idx + 1,
+          item.courseId,
+          item.courseName,
+          item.credits,
+          item.professor,
+          item.studentCount,
+          item.examTime,
+          item.examDate,
+          item.room
+        ]),
+
+        showHead: 'firstPage', 
+        styles: {
+          font: "Roboto", 
+          fontSize: 9,
+          cellPadding: 2,
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1,
+        },
+        headStyles: {
+          fillColor: [255, 255, 255], 
+          textColor: [0, 0, 0],       
+          fontStyle: "normal",
+          halign: 'center',
+          lineWidth: 0.1,
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 10 },
+          1: { halign: 'center', cellWidth: 25 },
+          3: { halign: 'center', cellWidth: 12 },
+          5: { halign: 'center', cellWidth: 15 },
+        },
+        theme: 'grid',
+      });
+
+      doc.save("Danh_sach_mon_phai_thi.pdf");
+
     } catch (error) {
-      alert("Lỗi tải dữ liệu PDF");
+      console.error(error);
+      alert("Lỗi xuất PDF");
     }
   };
-
 
   return (
     <div className="d-flex vh-100 bg-light">

@@ -47,7 +47,8 @@ const ExamSlipPage = ({ onLogout }) => {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        ignoreElements: (el) => el.classList.contains('btn-print-group')
       });
       const imgData = canvas.toDataURL("image/png");
 
