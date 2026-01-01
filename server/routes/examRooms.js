@@ -3,27 +3,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const ExamRoom = require('../models/ExamRoom');
 
-const toTrimmedString = (value) => {
-  if (value === undefined || value === null) return '';
-  return String(value).trim();
-};
-
-const normalizeRoomPayload = (body = {}) => {
-  const roomId = toTrimmedString(body.roomId ?? body.code ?? '');
-  const campus = toTrimmedString(body.campus ?? body.building ?? '');
-  const room = toTrimmedString(body.room ?? body.roomName ?? '');
-  const rawMax = body.maxStudents ?? body.capacity ?? body.max_students ?? body.maxstudents ?? body.capacityValue;
-  const maxStudents = rawMax === undefined || rawMax === null || rawMax === '' ? NaN : Number(rawMax);
-  return { roomId, campus, room, maxStudents };
-};
-
-const validateRoomPayload = ({ roomId, campus, room, maxStudents }) => {
-  if (!roomId) return 'roomId is required';
-  if (!campus) return 'campus is required';
-  if (!room) return 'room name is required';
-  if (!Number.isFinite(maxStudents) || maxStudents <= 0) return 'maxStudents must be a positive number';
-  return null;
-};
+const validate = require('../middleware/validate');
+const { createExamRoomSchema, updateExamRoomSchema } = require('../validations/examRoomValidation');
 
 // GET all rooms
 router.get('/', async (req, res) => {
@@ -49,21 +30,16 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create
-router.post('/', async (req, res) => {
+router.post('/', validate(createExamRoomSchema), async (req, res) => {
   try {
-    console.log('📥 POST /exam-rooms raw body:', JSON.stringify(req.body, null, 2));
-    const payload = normalizeRoomPayload(req.body);
-    console.log('✅ Normalized payload:', JSON.stringify(payload, null, 2));
-    const validationError = validateRoomPayload(payload);
-    if (validationError) {
-      console.error('❌ Validation error:', validationError);
-      return res.status(400).json({ message: validationError });
-    }
-    const newRoom = new ExamRoom(payload);
-    console.log('📝 Room before save:', JSON.stringify(newRoom.toObject(), null, 2));
-    await newRoom.save();
-    console.log('💾 Room saved:', JSON.stringify(newRoom.toObject(), null, 2));
-    res.status(201).json(newRoom);
+    const { roomId, location, capacity, status } = req.body;
+    
+    const exists = await ExamRoom.findOne({ roomId });
+    if (exists) return res.status(409).json({ message: 'Mã phòng đã tồn tại' });
+
+    const room = new ExamRoom({ roomId, location, capacity, status });
+    await room.save();
+    res.status(201).json(room);
   } catch (err) {
     console.error('❌ Error in POST:', err);
     if (err.code === 11000) return res.status(409).json({ message: 'roomId already exists' });
@@ -72,21 +48,23 @@ router.post('/', async (req, res) => {
 });
 
 // Update
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(updateExamRoomSchema), async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid id' });
   try {
-    console.log('Valid Schema Paths:', Object.keys(ExamRoom.schema.paths));
-    console.log('📥 PUT /exam-rooms/:id raw body:', JSON.stringify(req.body, null, 2));
-    const payload = normalizeRoomPayload(req.body);
-    console.log('✅ Normalized payload:', JSON.stringify(payload, null, 2));
-    const validationError = validateRoomPayload(payload);
-    if (validationError) {
-      console.error('❌ Validation error:', validationError);
-      return res.status(400).json({ message: validationError });
+    const { roomId, location, capacity, status } = req.body;
+    
+    if (roomId) {
+        const exists = await ExamRoom.findOne({ roomId, _id: { $ne: id } });
+        if (exists) return res.status(409).json({ message: 'Mã phòng đã tồn tại' });
     }
-    console.log('🔄 Updating with payload:', JSON.stringify(payload, null, 2));
-    const updated = await ExamRoom.findByIdAndUpdate(id, payload, { new: true, runValidators: true }).exec();
+
+    const updated = await ExamRoom.findByIdAndUpdate(
+        id, 
+        { roomId, location, capacity, status }, 
+        { new: true }
+    ).exec();
+    
     if (!updated) return res.status(404).json({ message: 'Room not found' });
     console.log('💾 Room after update:', JSON.stringify(updated.toObject(), null, 2));
     res.json(updated);

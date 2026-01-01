@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
-const Staff = require('../models/Staff'); // Đảm bảo bạn có model Staff
+const Staff = require('../models/Staff');
 
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // --- 1. TÌM TRONG DANH SÁCH SINH VIÊN ---
         const student = await Student.findOne({ 'account.username': username });
         if (student) {
             if (student.account.password === password) { 
@@ -25,7 +24,6 @@ router.post('/login', async (req, res) => {
             }
         }
 
-        // --- 2. TÌM TRONG DANH SÁCH STAFF (ADMIN) ---
         const staff = await Staff.findOne({ 'account.username': username });
         if (staff) {
             if (staff.account.password === password) {
@@ -43,7 +41,6 @@ router.post('/login', async (req, res) => {
             }
         }
 
-        // --- 3. KHÔNG TÌM THẤY ---
         return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại' });
 
     } catch (error) {

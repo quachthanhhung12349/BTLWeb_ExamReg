@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Student = require('../models/Student');
 
+const validate = require('../middleware/validate');
+const { createCourseSchema, updateCourseSchema } = require('../validations/courseValidation');
+
 // GET all courses
 router.get('/', async (req, res) => {
   try {
@@ -28,7 +31,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create course
-router.post('/', async (req, res) => {
+router.post('/', validate(createCourseSchema), async (req, res) => {
   try {
     const { courseId, courseName, maxStudents, professor, schedule } = req.body;
     if (!courseId || !courseName) return res.status(400).json({ message: 'Missing required fields' });
@@ -43,7 +46,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update course
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(updateCourseSchema), async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid id' });
   try {

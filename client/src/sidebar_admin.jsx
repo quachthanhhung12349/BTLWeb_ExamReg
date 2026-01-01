@@ -102,6 +102,16 @@ const SidebarAdmin = ({ activeLink }) => {
                         Quản lý điều kiện thi
                     </Link>
                 </li>
+                <li className="nav-item">
+                    <Link
+                        to="/admin/logs"
+                        className={`nav-link d-flex align-items-center ${isActive("/admin/logs") ? "active shadow-sm" : "text-dark"}`}
+                        style={isActive("/admin/logs") ? { backgroundColor: '#4f46e5', fontWeight: '500' } : { opacity: 0.8 }}
+                    >
+                        <i className="bi bi-journal-text me-3"></i>
+                        Nhật ký hệ thống
+                    </Link>
+                </li>
             </ul>
 
             {/* User Info & Dropdown */}
