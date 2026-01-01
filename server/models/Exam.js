@@ -25,6 +25,11 @@ const ExamSchema = new Schema({
   description: String,
   startDate: Date,
   endDate: Date,
+  status: { 
+        type: String, 
+        enum: ['active', 'upcoming', 'completed', 'cancelled'], 
+        default: 'active' 
+    },
   sessions: [SessionSub]
 }, { timestamps: true });
 

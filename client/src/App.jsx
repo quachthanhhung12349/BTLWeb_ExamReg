@@ -23,6 +23,7 @@ import StudentCoursesPage from './student_courses.jsx';
 import StudentExamSlipPage from './student_exam_slip.jsx';
 import NotificationDetail from './notification.jsx';
 import ExamEdit from './exam_edit';
+import AdminLogs from './admin_logs.jsx';
 
 import './App.css'
 
@@ -250,6 +251,19 @@ function AppContent() {
           authed && currentRole === 'admin' ? (
             <LayoutAdmin activeLink="RegConditionManagement">
               <RegConditionManagement />
+            </LayoutAdmin>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/admin/logs"
+        element={
+          authed && currentRole === 'admin' ? (
+            <LayoutAdmin activeLink="Logs">
+              <AdminLogs />
             </LayoutAdmin>
           ) : (
             <Navigate to="/login" replace />

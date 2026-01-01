@@ -3,6 +3,9 @@ const router = express.Router();
 const Student = require('../models/Student');
 const Course = require('../models/Course');
 
+const validate = require('../middleware/validate');
+const { createStudentSchema, updateStudentSchema } = require('../validations/studentValidation');
+
 // list
 router.get('/', async (req, res) => {
   const students = await Student.find().sort({ createdAt: -1 });
@@ -17,7 +20,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // create
-router.post('/', async (req, res) => {
+router.post('/', validate(createStudentSchema), async (req, res) => {
   const { studentId, name, class: className, email, birthDate, account, eligibleForExam } = req.body;
   if (!name || !email) return res.status(400).json({ message: 'Missing fields' });
 
@@ -57,7 +60,7 @@ router.post('/', async (req, res) => {
 });
 
 // update
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(updateStudentSchema), async (req, res) => {
   const s = await Student.findById(req.params.id);
   if (!s) return res.status(404).json({ message: 'Not found' });
 

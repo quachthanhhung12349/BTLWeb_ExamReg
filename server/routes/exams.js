@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Exam = require('../models/Exam'); 
+const validate = require('../middleware/validate');
+const { createExamSchema, updateExamSchema } = require('../validations/examValidation');
 
 // GET /api/exams
 router.get('/', async (req, res) => {
@@ -38,7 +40,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/exams
-router.post('/', async (req, res) => {
+router.post('/', validate(createExamSchema), async (req, res) => {
     // Nhận tất cả các trường
     const { 
         examId, examName, name, 
@@ -79,27 +81,27 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/exams/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(updateExamSchema), async (req, res) => {
   try {
-    const { name, semester, year, description, status, startDate, endDate } = req.body;
-    
-    const updateData = {
-        semester,
-        year,
-        description,
-        status,
-        startDate, 
-        endDate
-    };
-    if (name) updateData.examName = name;
+    // 1. Sao chép toàn bộ dữ liệu gửi lên
+    let updateData = { ...req.body };
 
+    // 2. Xử lý logic tên (ưu tiên 'name' chuyển thành 'examName')
+    if (updateData.name) {
+        updateData.examName = updateData.name;
+        delete updateData.name; // Xóa trường thừa
+    }
+
+    // 3. Cập nhật (Mongoose tự động bỏ qua các trường không có trong Schema)
     const updatedExam = await Exam.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true }
+      { new: true } // Trả về dữ liệu mới nhất sau khi sửa
     );
 
-    if (!updatedExam) return res.status(404).json({ message: 'Không tìm thấy kỳ thi' });
+    if (!updatedExam) return res.status(404).json({ success: false, message: 'Không tìm thấy kỳ thi' });
+    
+    // Trả về trực tiếp object kỳ thi (khớp với mong đợi của Test)
     res.json(updatedExam);
   } catch (error) {
     res.status(500).json({ message: error.message });
