@@ -1,8 +1,16 @@
-// Resolve API base URL at runtime, preferring env override then known local ports.
+// Resolve API base URL at runtime while avoiding localhost probes in production.
+const defaultRemote = 'https://btl-web-exam-reg-backend-jfpbivud0.vercel.app';
+const localFallbacks = ['http://localhost:5001', 'http://localhost:5000'];
+
+const isLocalHost =
+  typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+
 const candidates = (
   import.meta.env.VITE_API_BASE
-    ? [import.meta.env.VITE_API_BASE, 'http://localhost:5001', 'http://localhost:5000']
-    : ['https://btl-web-exam-reg-backend-jfpbivud0.vercel.app', 'http://localhost:5001', 'http://localhost:5000']
+    ? [import.meta.env.VITE_API_BASE]
+    : isLocalHost
+      ? localFallbacks
+      : [defaultRemote]
 ).map((url) => url.replace(/\/$/, ''));
 
 let resolvedBase = null;
