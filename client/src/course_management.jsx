@@ -215,6 +215,7 @@ const CourseManagement = () => {
                                         <th style={{ padding: '1rem' }}>Mã học phần</th>
                                         <th style={{ padding: '1rem' }}>Tên học phần</th>
                                         <th style={{ padding: '1rem' }}>Số tín chỉ</th>
+                                        <th style={{ padding: '1rem' }}>Giảng viên</th>
                                         <th style={{ padding: '1rem', textAlign: 'center' }}>Số lượng sinh viên</th>
                                         <th style={{ padding: '1rem', textAlign: 'center' }}>Hành động</th>
                                     </tr>
@@ -225,6 +226,7 @@ const CourseManagement = () => {
                                             <td style={{ padding: '1rem' }}>{s.courseId || '-'}</td>
                                             <td style={{ padding: '1rem' }}>{s.courseName || '-'}</td>
                                             <td style={{ padding: '1rem' }}>{s.credits || '-'}</td>
+                                            <td style={{ padding: '1rem' }}>{s.professor || '-'}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>{s.currentEnrollment || 0}</td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                 <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate(`/admin/course/edit/${s._id}`)}>✎</button>
@@ -234,7 +236,7 @@ const CourseManagement = () => {
                                     ))}
                                     {paginatedCourses.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="text-center p-4 text-muted">Không có kết quả</td>
+                                            <td colSpan={6} className="text-center p-4 text-muted">Không có kết quả</td>
                                         </tr>
                                     )}
                                 </tbody>

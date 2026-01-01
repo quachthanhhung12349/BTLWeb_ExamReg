@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchCourse, updateCourse } from './api/course_api.jsx';
+import { fetchCourse, updateCourse, enrollStudentsInCourse, removeStudentFromCourse } from './api/course_api.jsx';
 import { fetchStudents } from './api/student_api.jsx';
-import { getStudentsByCourse, addCourseToStudent, removeCourseFromStudent } from './api/courseStudent_api.jsx';
+import { getStudentsByCourse } from './api/courseStudent_api.jsx';
+import { fetchExamRooms } from './api/exam_room_api.jsx';
 import { exportTableToExcel } from './utils/excelExport';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -11,13 +12,19 @@ const CourseEdit = () => {
   const navigate = useNavigate();
   const [courseId, setCourseId] = useState('');
   const [courseName, setCourseName] = useState('');
-  const [maxStudents, setMaxStudents] = useState('');
+  const [credits, setCredits] = useState('');
+  const [professor, setProfessor] = useState('');
+  const [scheduleStartTime, setScheduleStartTime] = useState('');
+  const [scheduleEndTime, setScheduleEndTime] = useState('');
+  const [classroom, setClassroom] = useState('');
+  const [examRooms, setExamRooms] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [allStudents, setAllStudents] = useState([]);
   const [courseStudents, setCourseStudents] = useState([]);
   const [courseStudentsDetails, setCourseStudentsDetails] = useState([]);
+  const [enrolledStudentsFromArray, setEnrolledStudentsFromArray] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState(new Set());
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
@@ -31,9 +38,31 @@ const CourseEdit = () => {
           if (!c) return navigate('/admin/course');
           setCourseId(c.courseId || '');
           setCourseName(c.courseName || '');
-          setMaxStudents(c.maxStudents || '');
+          setCredits(c.credits || '');
+          setProfessor(c.professor || '');
+          
+          // Parse schedule times
+          if (c.schedule && c.schedule.time) {
+            const times = c.schedule.time.split('-');
+            if (times.length === 2) {
+              setScheduleStartTime(times[0].trim());
+              setScheduleEndTime(times[1].trim());
+            }
+          }
+          
+          setClassroom(c.schedule?.location || '');
 
-          // Fetch course's students
+          // Fetch exam rooms
+          try {
+            const rooms = await fetchExamRooms();
+            if (mounted) {
+              setExamRooms(Array.isArray(rooms) ? rooms : rooms.rooms || []);
+            }
+          } catch (err) {
+            console.error('Failed to fetch exam rooms:', err);
+          }
+
+          // Fetch course's students from CourseStudent collection
           try {
             const result = await getStudentsByCourse(c.courseId);
             if (mounted) {
@@ -48,6 +77,22 @@ const CourseEdit = () => {
             }
           } catch (err) {
             console.error('Failed to fetch course students:', err);
+          }
+          
+          // Get students from enrolledStudents array
+          if (c.enrolledStudents && c.enrolledStudents.length > 0) {
+            try {
+              const allStudentsData = await fetchStudents();
+              const enrolledDetails = c.enrolledStudents.map(es => {
+                const studentDetail = allStudentsData.find(s => s._id === es.studentId || s.studentId === es.studentId);
+                return studentDetail || { _id: es.studentId, studentId: es.studentName || es.studentId, name: es.studentName };
+              });
+              if (mounted) {
+                setEnrolledStudentsFromArray(enrolledDetails);
+              }
+            } catch (err) {
+              console.error('Failed to fetch enrolledStudents details:', err);
+            }
           }
         }
       } catch (err) {
@@ -66,7 +111,22 @@ const CourseEdit = () => {
     }
     setLoading(true);
     try {
-      await updateCourse(id, { courseId, courseName, maxStudents: Number(maxStudents) });
+      const scheduleTime = scheduleStartTime && scheduleEndTime 
+        ? `${scheduleStartTime} - ${scheduleEndTime}`
+        : '';
+      
+      const updateData = {
+        courseId,
+        courseName,
+        credits: credits ? Number(credits) : undefined,
+        professor,
+        schedule: {
+          time: scheduleTime,
+          location: classroom
+        }
+      };
+      
+      await updateCourse(id, updateData);
       navigate('/admin/course');
     } catch (err) {
       setError(err.message || 'Lỗi khi cập nhật học phần.');
@@ -126,19 +186,25 @@ const CourseEdit = () => {
       for (const cs of courseStudents) {
         const studentInAllStudents = allStudents.find(s => s.studentId === cs.studentId);
         if (studentInAllStudents && !selectedStudents.has(studentInAllStudents._id)) {
-          await removeCourseFromStudent(cs.studentId, courseId);
+          await removeStudentFromCourse(id, studentInAllStudents._id);
         }
       }
 
-      // Add new selected students
+      // Add new selected students - collect all IDs to add at once
+      const studentsToAdd = [];
       for (const studentMongoId of selectedStudents) {
         const student = allStudents.find(s => s._id === studentMongoId);
         if (student && !courseStudents.some(cs => cs.studentId === student.studentId)) {
-          await addCourseToStudent(student.studentId, courseId);
+          studentsToAdd.push(studentMongoId);
         }
       }
+      
+      // Add all new students at once
+      if (studentsToAdd.length > 0) {
+        await enrollStudentsInCourse(id, studentsToAdd);
+      }
 
-      // Refresh course students
+      // Refresh course students from CourseStudent collection
       const result = await getStudentsByCourse(courseId);
       setCourseStudents(result.list || []);
       // Update student details
@@ -147,6 +213,20 @@ const CourseEdit = () => {
         return studentDetail || { studentId: cs.studentId, name: cs.studentId };
       });
       setCourseStudentsDetails(detailedStudents);
+      
+      // Refresh enrolledStudents array from Course document
+      const updatedCourse = await fetchCourse(id);
+      if (updatedCourse.enrolledStudents && updatedCourse.enrolledStudents.length > 0) {
+        const allStudentsData = await fetchStudents();
+        const enrolledDetails = updatedCourse.enrolledStudents.map(es => {
+          const studentDetail = allStudentsData.find(s => s._id === es.studentId || s.studentId === es.studentId);
+          return studentDetail || { _id: es.studentId, studentId: es.studentName || es.studentId, name: es.studentName };
+        });
+        setEnrolledStudentsFromArray(enrolledDetails);
+      } else {
+        setEnrolledStudentsFromArray([]);
+      }
+      
       closeStudentModal();
     } catch (err) {
       alert('Lỗi cập nhật sinh viên: ' + err.message);
@@ -217,12 +297,60 @@ const CourseEdit = () => {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Số lượng tối đa</label>
-                <input type="number" className="form-control" value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)} disabled={loading} />
+                <label className="form-label">Số tín chỉ</label>
+                <input type="number" className="form-control" value={credits} onChange={(e) => setCredits(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Sinh viên đang học</label>
+                <label className="form-label">Giảng viên</label>
+                <input type="text" className="form-control" value={professor} onChange={(e) => setProfessor(e.target.value)} disabled={loading} />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Thời gian học</label>
+                <div className="row">
+                  <div className="col-md-6">
+                    <label className="form-label text-muted" style={{fontSize: '0.875rem'}}>Bắt đầu</label>
+                    <input 
+                      type="time" 
+                      className="form-control" 
+                      value={scheduleStartTime} 
+                      onChange={(e) => setScheduleStartTime(e.target.value)} 
+                      disabled={loading} 
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted" style={{fontSize: '0.875rem'}}>Kết thúc</label>
+                    <input 
+                      type="time" 
+                      className="form-control" 
+                      value={scheduleEndTime} 
+                      onChange={(e) => setScheduleEndTime(e.target.value)} 
+                      disabled={loading} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Phòng học</label>
+                <select 
+                  className="form-select" 
+                  value={classroom} 
+                  onChange={(e) => setClassroom(e.target.value)} 
+                  disabled={loading}
+                >
+                  <option value="">-- Chọn phòng học --</option>
+                  {examRooms.map(room => (
+                    <option key={room._id} value={room.room}>
+                      {room.room} {room.location ? `- ${room.location}` : ''} (Sức chứa: {room.capacity || room.maxStudents})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Các sinh viên đã đăng ký</label>
                 <div className="d-flex gap-2 align-items-center mb-2">
                   <button
                     type="button"
@@ -236,14 +364,16 @@ const CourseEdit = () => {
                     type="button"
                     className="btn btn-outline-success"
                     onClick={handleExportStudents}
-                    disabled={courseStudentsDetails.length === 0}
+                    disabled={courseStudentsDetails.length === 0 && enrolledStudentsFromArray.length === 0}
                   >
-                    � Xuất Excel
+                    📥 Xuất Excel
                   </button>
                 </div>
+                
+                {/* Display students from CourseStudent collection */}
                 {courseStudentsDetails.length > 0 && (
-                  <div>
-                    <p className="text-muted mb-2">Các sinh viên đã đăng ký ({courseStudentsDetails.length}):</p>
+                  <div className="mb-3">
+                    <p className="text-muted mb-2">Sinh viên từ CourseStudent ({courseStudentsDetails.length}):</p>
                     <ul className="list-group">
                       {courseStudentsDetails.map((student, idx) => (
                         <li key={student._id || idx} className="list-group-item d-flex justify-content-between align-items-center">
@@ -255,7 +385,7 @@ const CourseEdit = () => {
                             className="btn btn-sm btn-outline-danger"
                             onClick={async () => {
                               try {
-                                await removeCourseFromStudent(student.studentId, courseId);
+                                await removeStudentFromCourse(id, student._id);
                                 const result = await getStudentsByCourse(courseId);
                                 setCourseStudents(result.list || []);
                                 // Update student details
@@ -265,6 +395,18 @@ const CourseEdit = () => {
                                   return studentDetail || { studentId: cs.studentId, name: cs.studentId };
                                 });
                                 setCourseStudentsDetails(detailedStudents);
+                                
+                                // Refresh enrolledStudents array
+                                const updatedCourse = await fetchCourse(id);
+                                if (updatedCourse.enrolledStudents && updatedCourse.enrolledStudents.length > 0) {
+                                  const enrolledDetails = updatedCourse.enrolledStudents.map(es => {
+                                    const studentDetail = allStudentsData.find(s => s._id === es.studentId || s.studentId === es.studentId);
+                                    return studentDetail || { _id: es.studentId, studentId: es.studentName || es.studentId, name: es.studentName };
+                                  });
+                                  setEnrolledStudentsFromArray(enrolledDetails);
+                                } else {
+                                  setEnrolledStudentsFromArray([]);
+                                }
                               } catch (err) {
                                 alert('Lỗi xóa sinh viên: ' + err.message);
                               }
@@ -277,6 +419,27 @@ const CourseEdit = () => {
                       ))}
                     </ul>
                   </div>
+                )}
+                
+                {/* Display students from enrolledStudents array */}
+                {enrolledStudentsFromArray.length > 0 && (
+                  <div>
+                    <p className="text-muted mb-2">Sinh viên từ enrolledStudents array ({enrolledStudentsFromArray.length}):</p>
+                    <ul className="list-group">
+                      {enrolledStudentsFromArray.map((student, idx) => (
+                        <li key={student._id || idx} className="list-group-item d-flex justify-content-between align-items-center">
+                          <div>
+                            <strong>{student.studentId}</strong> - {student.name}
+                          </div>
+                          <span className="badge bg-secondary">Từ mảng</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {courseStudentsDetails.length === 0 && enrolledStudentsFromArray.length === 0 && (
+                  <p className="text-muted">Chưa có sinh viên đăng ký.</p>
                 )}
               </div>
 

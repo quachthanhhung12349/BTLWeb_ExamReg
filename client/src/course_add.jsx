@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createCourse } from './api/course_api.jsx';
+import { createCourse, enrollStudentsInCourse } from './api/course_api.jsx';
 import { fetchStudents } from './api/student_api.jsx';
-import { addCourseToStudent, removeCourseFromStudent } from './api/courseStudent_api.jsx';
+import { fetchExamRooms } from './api/exam_room_api.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const CourseAdd = () => {
   const navigate = useNavigate();
   const [courseId, setCourseId] = useState('');
   const [courseName, setCourseName] = useState('');
-  const [maxStudents, setMaxStudents] = useState('');
+  const [credits, setCredits] = useState('');
+  const [professor, setProfessor] = useState('');
+  const [scheduleStartTime, setScheduleStartTime] = useState('');
+  const [scheduleEndTime, setScheduleEndTime] = useState('');
+  const [classroom, setClassroom] = useState('');
+  const [examRooms, setExamRooms] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
@@ -19,16 +24,63 @@ const CourseAdd = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const rooms = await fetchExamRooms();
+        setExamRooms(Array.isArray(rooms) ? rooms : rooms.rooms || []);
+      } catch (err) {
+        console.error('Failed to fetch exam rooms:', err);
+      }
+    })();
+  }, []);
+
   const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Validate required fields
     if (!courseId || !courseName) {
       setError('Vui lòng điền tất cả các trường.');
       return;
     }
+    
+    // Validate courseId length (minimum 4 characters)
+    if (courseId.length < 4) {
+      setError('Mã học phần phải có ít nhất 4 ký tự (VD: INT1234).');
+      return;
+    }
+    
+    // Validate courseName length (minimum 5 characters)
+    if (courseName.length < 5) {
+      setError('Tên học phần phải có ít nhất 5 ký tự.');
+      return;
+    }
+    
     setLoading(true);
     try {
-      await createCourse({ courseId, courseName, maxStudents: Number(maxStudents) });
+      const scheduleTime = scheduleStartTime && scheduleEndTime 
+        ? `${scheduleStartTime} - ${scheduleEndTime}`
+        : '';
+      
+      const courseData = {
+        courseId,
+        courseName,
+        credits: credits ? Number(credits) : 3,
+        professor: professor || '',
+        schedule: (scheduleTime || classroom) ? {
+          time: scheduleTime,
+          location: classroom
+        } : null
+      };
+      
+      const createdCourse = await createCourse(courseData);
+      
+      // Add students to both enrolledStudents array and CourseStudent table
+      if (selectedStudents.size > 0) {
+        await enrollStudentsInCourse(createdCourse._id, Array.from(selectedStudents));
+      }
+      
       navigate('/admin/course');
     } catch (err) {
       setError(err.message || 'Lỗi khi thêm học phần.');
@@ -46,7 +98,7 @@ const CourseAdd = () => {
     try {
       const students = await fetchStudents();
       setAllStudents(students || []);
-      setSelectedStudents(new Set());
+      // Don't clear selectedStudents - keep the previously selected ones
     } catch (err) {
       alert('Lỗi tải danh sách sinh viên: ' + err.message);
     } finally {
@@ -58,7 +110,7 @@ const CourseAdd = () => {
   const closeStudentModal = () => {
     setShowStudentModal(false);
     setAllStudents([]);
-    setSelectedStudents(new Set());
+    // Don't clear selectedStudents - keep them for form submission
     setStudentSearchTerm('');
   };
 
@@ -78,25 +130,9 @@ const CourseAdd = () => {
   };
 
   const saveStudents = async () => {
-    if (!courseId) {
-      alert('Vui lòng nhập mã học phần trước khi thêm sinh viên.');
-      return;
-    }
-
-    setLoadingStudents(true);
-    try {
-      for (const studentMongoId of selectedStudents) {
-        const student = allStudents.find(s => s._id === studentMongoId);
-        if (student) {
-          await addCourseToStudent(student.studentId, courseId);
-        }
-      }
-      closeStudentModal();
-    } catch (err) {
-      alert('Lỗi thêm sinh viên: ' + err.message);
-    } finally {
-      setLoadingStudents(false);
-    }
+    // Simply close the modal and keep the selected students
+    // They will be enrolled when the form is submitted in handleAdd
+    closeStudentModal();
   };
 
   return (
@@ -122,12 +158,60 @@ const CourseAdd = () => {
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Số lượng tối đa</label>
-                <input type="number" className="form-control" value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)} disabled={loading} />
+                <label className="form-label">Số tín chỉ</label>
+                <input type="number" className="form-control" value={credits} onChange={(e) => setCredits(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Sinh viên đang học</label>
+                <label className="form-label">Giảng viên</label>
+                <input type="text" className="form-control" value={professor} onChange={(e) => setProfessor(e.target.value)} disabled={loading} />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Thời gian học</label>
+                <div className="row">
+                  <div className="col-md-6">
+                    <label className="form-label text-muted" style={{fontSize: '0.875rem'}}>Bắt đầu</label>
+                    <input 
+                      type="time" 
+                      className="form-control" 
+                      value={scheduleStartTime} 
+                      onChange={(e) => setScheduleStartTime(e.target.value)} 
+                      disabled={loading} 
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted" style={{fontSize: '0.875rem'}}>Kết thúc</label>
+                    <input 
+                      type="time" 
+                      className="form-control" 
+                      value={scheduleEndTime} 
+                      onChange={(e) => setScheduleEndTime(e.target.value)} 
+                      disabled={loading} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Phòng học</label>
+                <select 
+                  className="form-select" 
+                  value={classroom} 
+                  onChange={(e) => setClassroom(e.target.value)} 
+                  disabled={loading}
+                >
+                  <option value="">-- Chọn phòng học --</option>
+                  {examRooms.map(room => (
+                    <option key={room._id} value={room.room}>
+                      {room.room} {room.location ? `- ${room.location}` : ''} (Sức chứa: {room.capacity || room.maxStudents})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Các sinh viên đã đăng ký</label>
                 <div className="d-flex gap-2 align-items-center mb-2">
                   <button
                     type="button"

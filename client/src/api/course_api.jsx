@@ -33,7 +33,16 @@ export async function createCourse(data) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error((await res.json()).message || 'Failed to create course');
+    if (!res.ok) {
+      const errorData = await res.json();
+      // Include detailed validation errors if available
+      let errorMessage = errorData.message || 'Failed to create course';
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        const details = errorData.errors.map(e => `${e.field}: ${e.message}`).join(', ');
+        errorMessage = `${errorMessage} - ${details}`;
+      }
+      throw new Error(errorMessage);
+    }
     return await res.json();
   } catch (err) {
     console.error('createCourse error', err);

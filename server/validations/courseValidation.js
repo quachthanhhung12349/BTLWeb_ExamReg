@@ -16,12 +16,12 @@ const createCourseSchema = Joi.object({
         'number.min': 'Số tín chỉ tối thiểu là 1'
     }),
     maxStudents: Joi.number().min(1).default(100),
-    professor: Joi.string().allow(''),
+    professor: Joi.string().allow('').optional(),
     schedule: Joi.object({
-        days: Joi.array().items(Joi.string()),
-        time: Joi.string().allow(''),
-        location: Joi.string().allow('')
-    }).optional()
+        days: Joi.array().items(Joi.string()).optional(),
+        time: Joi.string().allow('').optional(),
+        location: Joi.string().allow('').optional()
+    }).optional().allow(null)
 });
 
 const updateCourseSchema = Joi.object({
@@ -30,7 +30,11 @@ const updateCourseSchema = Joi.object({
     credits: Joi.number().min(1).max(10).optional(),
     maxStudents: Joi.number().min(1).optional(),
     professor: Joi.string().allow('').optional(),
-    schedule: Joi.object().optional()
+    schedule: Joi.object({
+        days: Joi.array().items(Joi.string()).optional(),
+        time: Joi.string().allow('').optional(),
+        location: Joi.string().allow('').optional()
+    }).optional().allow(null)
 }).min(1);
 
 module.exports = {

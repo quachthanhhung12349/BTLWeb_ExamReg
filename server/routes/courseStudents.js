@@ -18,6 +18,11 @@ router.get('/all', async (req, res) => {
 router.get('/', async (req, res) => {
     const { courseId, studentId } = req.query;
     try {
+        // If no parameters provided, return empty list instead of error
+        if (!courseId && !studentId) {
+            return res.json({ success: true, list: [] });
+        }
+        
         let query = {};
         if (courseId) {
             query.courseId = { $regex: courseId, $options: 'i' }; // Tìm gần đúng

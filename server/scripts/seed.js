@@ -41,6 +41,7 @@ async function seed() {
     await db.collection('exam_rooms').deleteMany({});
     await db.collection('exams').deleteMany({});
     await db.collection('notifications').deleteMany({});
+    await db.collection('course_students').deleteMany({});
 
     // 1. Generate Exam Rooms
     console.log('🏫 Generating Exam Rooms...');
@@ -121,9 +122,34 @@ async function seed() {
     const studentResult = await db.collection('students').insertMany(studentDocs);
     const studentIds = Object.values(studentResult.insertedIds);
 
-    // INSERT COURSES SAU KHI ĐÃ CÓ DANH SÁCH SINH VIÊN
+    // INSERT COURSES AFTER BUILDING ENROLLED STUDENTS LIST
     const courseResult = await db.collection('courses').insertMany(courseDocs);
     const courseIds = Object.values(courseResult.insertedIds);
+
+    // 4.5 CREATE CourseStudent TABLE ENTRIES TO SYNC WITH enrolledStudents
+    console.log('🔗 Syncing CourseStudent table with enrolledStudents...');
+    const courseStudentDocs = [];
+    
+    for (const course of courseDocs) {
+      for (const enrolledStudent of course.enrolledStudents) {
+        const student = studentDocs.find(s => s._id.toString() === enrolledStudent.studentId.toString());
+        if (student) {
+          courseStudentDocs.push({
+            studentId: student.studentId,
+            courseId: course.courseId,
+            studentName: student.name,
+            classId: student.class,
+            metCondition: true,
+            note: ''
+          });
+        }
+      }
+    }
+    
+    if (courseStudentDocs.length > 0) {
+      await db.collection('course_students').insertMany(courseStudentDocs);
+      console.log(`  ✓ Inserted ${courseStudentDocs.length} CourseStudent records.`);
+    }
 
     // 5. Generate Exams
     console.log('📋 Generating Exams...');
@@ -171,7 +197,7 @@ async function seed() {
     }));
     await db.collection('notifications').insertMany(notificationDocs);
 
-    console.log('\n✅ Seeding Completed. Student list in modal is fixed!');
+    console.log('\n✅ Seeding Completed. CourseStudent table synced with enrolledStudents!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error);

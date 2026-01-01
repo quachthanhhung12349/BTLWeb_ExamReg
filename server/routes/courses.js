@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Student = require('../models/Student');
+const CourseStudent = require('../models/CourseStudent');
 
 const validate = require('../middleware/validate');
 const { createCourseSchema, updateCourseSchema } = require('../validations/courseValidation');
@@ -42,11 +43,11 @@ router.get('/:id', async (req, res) => {
 // Create course
 router.post('/', validate(createCourseSchema), async (req, res) => {
   try {
-    const { courseId, courseName, maxStudents, professor, schedule } = req.body;
+    const { courseId, courseName, credits, maxStudents, professor, schedule } = req.body;
     if (!courseId || !courseName) return res.status(400).json({ message: 'Missing required fields' });
     const existing = await Course.findOne({ courseId }).exec();
     if (existing) return res.status(409).json({ message: 'courseId already exists' });
-    const course = new Course({ courseId, courseName, maxStudents, professor, schedule });
+    const course = new Course({ courseId, courseName, credits, maxStudents, professor, schedule });
     await course.save();
     res.status(201).json(course);
   } catch (err) {
@@ -59,13 +60,13 @@ router.put('/:id', validate(updateCourseSchema), async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid id' });
   try {
-    const { courseId, courseName, maxStudents, professor, schedule } = req.body;
+    const { courseId, courseName, credits, maxStudents, professor, schedule } = req.body;
     // check duplicate courseId
     if (courseId) {
       const dup = await Course.findOne({ courseId, _id: { $ne: id } }).exec();
       if (dup) return res.status(409).json({ message: 'courseId already exists' });
     }
-    const updated = await Course.findByIdAndUpdate(id, { courseId, courseName, maxStudents, professor, schedule }, { new: true }).exec();
+    const updated = await Course.findByIdAndUpdate(id, { courseId, courseName, credits, maxStudents, professor, schedule }, { new: true }).exec();
     if (!updated) return res.status(404).json({ message: 'Course not found' });
     res.json(updated);
   } catch (err) {
@@ -97,7 +98,7 @@ router.post('/:id/enroll-all', async (req, res) => {
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
     const studentQuery = onlyEligible ? { eligibleForExam: true } : {};
-    const allStudents = await Student.find(studentQuery, { name: 1 }).exec();
+    const allStudents = await Student.find(studentQuery, { studentId: 1, name: 1 }).exec();
 
     const alreadyEnrolledIds = new Set((course.enrolledStudents || []).map(e => String(e.studentId)));
     const notYetEnrolled = allStudents.filter(s => !alreadyEnrolledIds.has(String(s._id)));
@@ -129,11 +130,35 @@ router.post('/:id/enroll-all', async (req, res) => {
       await Student.bulkWrite(bulkOps);
     }
 
+    // Add to CourseStudent table for unified tracking
+    const courseStudentOps = [];
+    for (const s of toEnroll) {
+      // Check if already exists in CourseStudent
+      const existing = await CourseStudent.findOne({ 
+        studentId: s.studentId, 
+        courseId: course.courseId 
+      }).exec();
+      
+      if (!existing) {
+        courseStudentOps.push({
+          studentId: s.studentId,
+          courseId: course.courseId,
+          studentName: s.name,
+          metCondition: true
+        });
+      }
+    }
+    
+    if (courseStudentOps.length > 0) {
+      await CourseStudent.insertMany(courseStudentOps);
+    }
+
     res.json({
       message: 'Enrolled students into course',
       courseId: course._id,
       addedCount: toEnroll.length,
-      totalEnrollment: course.currentEnrollment
+      totalEnrollment: course.currentEnrollment,
+      courseStudentsAdded: courseStudentOps.length
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -155,7 +180,7 @@ router.post('/:id/enroll-students', async (req, res) => {
 
     // Fetch students details to record names, etc.
     const objectIds = studentIds.filter(sid => mongoose.Types.ObjectId.isValid(sid)).map(sid => new mongoose.Types.ObjectId(sid));
-    const students = await Student.find({ _id: { $in: objectIds } }, { name: 1 }).exec();
+    const students = await Student.find({ _id: { $in: objectIds } }, { studentId: 1, name: 1 }).exec();
 
     const alreadyEnrolledIds = new Set((course.enrolledStudents || []).map(e => String(e.studentId)));
     const filtered = students.filter(s => !alreadyEnrolledIds.has(String(s._id)));
@@ -167,12 +192,14 @@ router.post('/:id/enroll-students', async (req, res) => {
     }
     const toEnroll = filtered.slice(0, availableSlots);
 
+    // Add to enrolledStudents array in Course
     for (const s of toEnroll) {
       course.enrolledStudents.push({ studentId: s._id, studentName: s.name });
     }
     course.currentEnrollment = (course.currentEnrollment || 0) + toEnroll.length;
     await course.save();
 
+    // Add to Student's courses array
     const courseTag = { courseId: course.courseId, courseName: course.courseName };
     const bulkOps = toEnroll.map(s => ({
       updateOne: {
@@ -182,7 +209,35 @@ router.post('/:id/enroll-students', async (req, res) => {
     }));
     if (bulkOps.length) await Student.bulkWrite(bulkOps);
 
-    res.json({ message: 'Selected students enrolled', addedCount: toEnroll.length, totalEnrollment: course.currentEnrollment });
+    // Add to CourseStudent table for unified tracking
+    const courseStudentOps = [];
+    for (const s of toEnroll) {
+      // Check if already exists in CourseStudent
+      const existing = await CourseStudent.findOne({ 
+        studentId: s.studentId, 
+        courseId: course.courseId 
+      }).exec();
+      
+      if (!existing) {
+        courseStudentOps.push({
+          studentId: s.studentId,
+          courseId: course.courseId,
+          studentName: s.name,
+          metCondition: true
+        });
+      }
+    }
+    
+    if (courseStudentOps.length > 0) {
+      await CourseStudent.insertMany(courseStudentOps);
+    }
+
+    res.json({ 
+      message: 'Selected students enrolled', 
+      addedCount: toEnroll.length, 
+      totalEnrollment: course.currentEnrollment,
+      courseStudentsAdded: courseStudentOps.length
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -234,6 +289,12 @@ router.delete('/:id/remove-student/:studentId', async (req, res) => {
     if (student) {
       student.courses = (student.courses || []).filter(c => c.courseId !== course.courseId);
       await student.save();
+      
+      // Remove from CourseStudent table
+      await CourseStudent.findOneAndDelete({
+        studentId: student.studentId,
+        courseId: course.courseId
+      }).exec();
     }
 
     res.json({ message: 'Student removed from course', courseId: id, studentId, currentEnrollment: course.currentEnrollment });
