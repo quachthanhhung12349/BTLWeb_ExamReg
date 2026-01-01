@@ -85,6 +85,25 @@ const ExamRoomManagement = () => {
         });
     };
 
+    const normalizeCsvRow = (row = {}) => {
+        const text = (value) => {
+            if (value === undefined || value === null) return '';
+            return String(value).trim();
+        };
+        const numeric = (value) => {
+            if (value === undefined || value === null || value === '') return NaN;
+            const num = Number(value);
+            return Number.isFinite(num) ? num : NaN;
+        };
+
+        return {
+            roomId: text(row.roomId ?? row.id ?? ''),
+            campus: text(row.building ?? row.campus ?? ''),
+            room: text(row.room ?? row.roomName ?? ''),
+            maxStudents: numeric(row.capacity ?? row.maxStudents ?? row.maxstudents ?? row.capacityValue)
+        };
+    };
+
     const handleImportCsv = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -93,22 +112,29 @@ const ExamRoomManagement = () => {
             const text = await file.text();
             const rows = parseCsv(text);
             let success = 0;
+            let skipped = 0;
+            let failed = 0;
             for (const row of rows) {
+                const payload = normalizeCsvRow(row);
+                if (!payload.roomId || !payload.campus || !payload.room || !Number.isFinite(payload.maxStudents) || payload.maxStudents <= 0) {
+                    skipped += 1;
+                    continue;
+                }
                 try {
-                    await createExamRoom({
-                        roomId: row.roomId,
-                        building: row.building,
-                        roomName: row.roomName,
-                        capacity: row.capacity ? Number(row.capacity) : undefined
-                    });
+                    await createExamRoom(payload);
                     success += 1;
                 } catch (err) {
                     console.error('Failed to import exam room row', row, err);
+                    failed += 1;
                 }
             }
             const data = await fetchExamRooms();
             setRooms(data || []);
-            alert(`Đã import ${success} ca thi/phòng thi.`);
+            const total = rows.length;
+            const notes = [];
+            if (skipped) notes.push(`${skipped} dòng thiếu dữ liệu`);
+            if (failed) notes.push(`${failed} dòng lỗi API`);
+            alert(`Đã import ${success}/${total} phòng thi${notes.length ? ` (${notes.join(', ')})` : ''}.`);
         } catch (err) {
             alert(err.message || 'Lỗi import CSV phòng thi');
         } finally {

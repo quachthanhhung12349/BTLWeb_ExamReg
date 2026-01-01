@@ -35,6 +35,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// --- REQUEST LOGGING MIDDLEWARE ---
+app.use((req, res, next) => {
+  if (req.path.includes('exam-rooms')) {
+    console.log(`\n📍 ${req.method} ${req.path}`);
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
 // --- HEALTH CHECK ---
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });

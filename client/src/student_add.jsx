@@ -97,8 +97,10 @@ const StudentAdd = () => {
 
     setLoadingCourses(true);
     try {
-      for (const courseId of selectedCourses) {
-        await addCourseToStudent(studentId, courseId);
+      for (const selId of selectedCourses) {
+        const course = allCourses.find(c => c._id === selId);
+        const cid = course ? course.courseId : selId;
+        await addCourseToStudent(studentId, cid);
       }
       closeCourseModal();
     } catch (err) {

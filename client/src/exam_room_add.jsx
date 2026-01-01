@@ -15,13 +15,18 @@ const ExamRoomAdd = () => {
   const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
-    if (!roomId || !building || !roomName || !capacity) {
-      setError('Vui lòng điền tất cả các trường.');
+    const trimmedRoomId = roomId.trim();
+    const trimmedBuilding = building.trim();
+    const trimmedRoomName = roomName.trim();
+    const numericCapacity = Number(capacity);
+
+    if (!trimmedRoomId || !trimmedBuilding || !trimmedRoomName || !Number.isFinite(numericCapacity) || numericCapacity <= 0) {
+      setError('Vui lòng nhập đầy đủ thông tin và sức chứa hợp lệ.');
       return;
     }
     setLoading(true);
     try {
-      await createExamRoom({ roomId, building, roomName, capacity: Number(capacity) });
+      await createExamRoom({ roomId: trimmedRoomId, campus: trimmedBuilding, room: trimmedRoomName, maxStudents: numericCapacity });
       navigate('/admin/exam-rooms');
     } catch (err) {
       setError(err.message || 'Lỗi khi thêm phòng thi.');

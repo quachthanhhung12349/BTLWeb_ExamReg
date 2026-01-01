@@ -35,13 +35,18 @@ const ExamRoomEdit = () => {
   const handleOk = async (e) => {
     e.preventDefault();
     setError('');
-    if (!roomId || !building || !roomName || !capacity) {
-      setError('Vui lòng điền tất cả các trường.');
+    const trimmedRoomId = roomId.trim();
+    const trimmedBuilding = building.trim();
+    const trimmedRoomName = roomName.trim();
+    const numericCapacity = Number(capacity);
+
+    if (!trimmedRoomId || !trimmedBuilding || !trimmedRoomName || !Number.isFinite(numericCapacity) || numericCapacity <= 0) {
+      setError('Vui lòng nhập đầy đủ thông tin và sức chứa hợp lệ.');
       return;
     }
     setLoading(true);
     try {
-      await updateExamRoom(id, { roomId, building, roomName, capacity: Number(capacity) });
+      await updateExamRoom(id, { roomId: trimmedRoomId, campus: trimmedBuilding, room: trimmedRoomName, maxStudents: numericCapacity });
       navigate('/admin/exam-rooms');
     } catch (err) {
       setError(err.message || 'Lỗi khi cập nhật ca thi.');
@@ -57,7 +62,7 @@ const ExamRoomEdit = () => {
   return (
     <div id="page-content-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="bg-white border-bottom p-4" style={{ borderRadius: 0 }}>
-        <h1 className="h3 mb-3">Chỉnh sửa ca thi</h1>
+        <h1 className="h3 mb-3">Chỉnh sửa phòng thi</h1>
       </div>
 
       <div className="container-fluid p-4" style={{ flex: 1, backgroundColor: '#f8f9fa' }}>
@@ -67,23 +72,28 @@ const ExamRoomEdit = () => {
             <form onSubmit={handleOk}>
 
               <div className="mb-3">
+                <label className="form-label">STT (Mã)</label>
+                <input type="text" className="form-control" value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={loading} />
+              </div>
+
+              <div className="mb-3">
                 <label className="form-label">Giảng đường</label>
-                <input type="text" className="form-control" value={building} onChange={(e) => setBuilding(e.target.value)} />
+                <input type="text" className="form-control" value={building} onChange={(e) => setBuilding(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Tên phòng thi</label>
-                <input type="text" className="form-control" value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+                <input type="text" className="form-control" value={roomName} onChange={(e) => setRoomName(e.target.value)} disabled={loading} />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Sức chứa</label>
-                <input type="number" className="form-control" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+                <input type="number" className="form-control" value={capacity} onChange={(e) => setCapacity(e.target.value)} disabled={loading} />
               </div>
 
               <div className="d-flex justify-content-end">
                 <button type="button" className="btn btn-secondary me-2" onClick={handleCancel}>Huỷ</button>
-                <button type="submit" className="btn btn-primary">OK</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Đang lưu...' : 'Lưu'}</button>
               </div>
             </form>
           </div>

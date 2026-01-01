@@ -28,30 +28,43 @@ export async function fetchExamRoom(id) {
 
 export async function createExamRoom(data) {
   try {
-    const res = await fetch(await roomsPath(), {
+    const url = await roomsPath();
+    console.log('Valid Schema Paths:', Object.keys(ExamRoom.schema.paths));
+    console.log('🚀 Creating room at:', url);
+    console.log('📤 Request payload:', JSON.stringify(data, null, 2));
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error((await res.json()).message || 'Failed to create room');
-    return await res.json();
+    console.log('📥 Response status:', res.status);
+    const responseData = await res.json();
+    console.log('📥 Response data:', JSON.stringify(responseData, null, 2));
+    if (!res.ok) throw new Error(responseData.message || 'Failed to create room');
+    return responseData;
   } catch (err) {
-    console.error('createExamRoom error', err);
+    console.error('❌ createExamRoom error:', err);
     throw err;
   }
 }
 
 export async function updateExamRoom(id, data) {
   try {
-    const res = await fetch(await roomsPath(`/${id}`), {
+    const url = await roomsPath(`/${id}`);
+    console.log('🚀 Updating room at:', url);
+    console.log('📤 Request payload:', JSON.stringify(data, null, 2));
+    const res = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error((await res.json()).message || 'Failed to update room');
-    return await res.json();
+    console.log('📥 Response status:', res.status);
+    const responseData = await res.json();
+    console.log('📥 Response data:', JSON.stringify(responseData, null, 2));
+    if (!res.ok) throw new Error(responseData.message || 'Failed to update room');
+    return responseData;
   } catch (err) {
-    console.error('updateExamRoom error', err);
+    console.error('❌ updateExamRoom error:', err);
     throw err;
   }
 }
