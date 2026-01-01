@@ -25,11 +25,11 @@ const createCourseSchema = Joi.object({
 });
 
 const updateCourseSchema = Joi.object({
-    courseId: Joi.string().min(4).max(10),
-    courseName: Joi.string().min(5).max(100),
-    credits: Joi.number().min(1).max(10),
-    maxStudents: Joi.number().min(1),
-    professor: Joi.string().allow(''),
+    courseId: Joi.string().min(4).max(10).optional(),
+    courseName: Joi.string().min(1).max(100).optional(),
+    credits: Joi.number().min(1).max(10).optional(),
+    maxStudents: Joi.number().min(1).optional(),
+    professor: Joi.string().allow('').optional(),
     schedule: Joi.object().optional()
 }).min(1);
 

@@ -11,7 +11,13 @@ const { createCourseSchema, updateCourseSchema } = require('../validations/cours
 router.get('/', async (req, res) => {
   try {
     const courses = await Course.find().sort({ createdAt: -1 }).exec();
-    res.json(courses);
+    // Ensure currentEnrollment matches the actual number of enrolled students
+    const coursesWithCorrectCount = courses.map(course => {
+      const courseObj = course.toObject ? course.toObject() : course;
+      courseObj.currentEnrollment = courseObj.enrolledStudents ? courseObj.enrolledStudents.length : 0;
+      return courseObj;
+    });
+    res.json(coursesWithCorrectCount);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -24,7 +30,10 @@ router.get('/:id', async (req, res) => {
   try {
     const course = await Course.findById(id).exec();
     if (!course) return res.status(404).json({ message: 'Course not found' });
-    res.json(course);
+    const courseObj = course.toObject ? course.toObject() : course;
+    // Ensure currentEnrollment matches the actual number of enrolled students
+    courseObj.currentEnrollment = courseObj.enrolledStudents ? courseObj.enrolledStudents.length : 0;
+    res.json(courseObj);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

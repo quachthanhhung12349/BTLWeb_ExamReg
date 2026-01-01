@@ -29,7 +29,6 @@ export async function fetchExamRoom(id) {
 export async function createExamRoom(data) {
   try {
     const url = await roomsPath();
-    console.log('Valid Schema Paths:', Object.keys(ExamRoom.schema.paths));
     console.log('🚀 Creating room at:', url);
     console.log('📤 Request payload:', JSON.stringify(data, null, 2));
     const res = await fetch(url, {

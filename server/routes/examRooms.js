@@ -32,14 +32,22 @@ router.get('/:id', async (req, res) => {
 // Create
 router.post('/', validate(createExamRoomSchema), async (req, res) => {
   try {
-    const { roomId, location, capacity, status } = req.body;
+    const { roomId, room, location, capacity, maxStudents, campus, status } = req.body;
     
     const exists = await ExamRoom.findOne({ roomId });
     if (exists) return res.status(409).json({ message: 'Mã phòng đã tồn tại' });
 
-    const room = new ExamRoom({ roomId, location, capacity, status });
-    await room.save();
-    res.status(201).json(room);
+    const newRoom = new ExamRoom({ 
+      roomId, 
+      room: room || roomId, 
+      location: location || '', 
+      capacity: capacity || maxStudents, 
+      maxStudents: maxStudents, 
+      campus: campus || 'Main Campus',
+      status: status || 'available' 
+    });
+    await newRoom.save();
+    res.status(201).json(newRoom);
   } catch (err) {
     console.error('❌ Error in POST:', err);
     if (err.code === 11000) return res.status(409).json({ message: 'roomId already exists' });
@@ -52,7 +60,7 @@ router.put('/:id', validate(updateExamRoomSchema), async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid id' });
   try {
-    const { roomId, location, capacity, status } = req.body;
+    const { roomId, room, location, capacity, maxStudents, campus, status } = req.body;
     
     if (roomId) {
         const exists = await ExamRoom.findOne({ roomId, _id: { $ne: id } });
@@ -61,7 +69,15 @@ router.put('/:id', validate(updateExamRoomSchema), async (req, res) => {
 
     const updated = await ExamRoom.findByIdAndUpdate(
         id, 
-        { roomId, location, capacity, status }, 
+        { 
+          roomId, 
+          room: room || roomId, 
+          location: location || '', 
+          capacity: capacity || maxStudents,
+          maxStudents: maxStudents || capacity,
+          campus: campus || 'Main Campus',
+          status: status || 'available' 
+        }, 
         { new: true }
     ).exec();
     
