@@ -52,7 +52,7 @@ const ExamRoomAdd = () => {
             <form onSubmit={handleAdd}>
 
               <div className="mb-3">
-                <label className="form-label">STT (Mã)</label>
+                <label className="form-label">Mã</label>
                 <input type="text" className="form-control" value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={loading} />
               </div>
 
